@@ -92,6 +92,19 @@ interface AuthState {
 
 - `accessToken` only in-memory — lost on page refresh → `AuthInitializer` restores via `POST /api/auth/refresh` (reads httpOnly cookie)
 - `user` persisted to localStorage (non-sensitive identity data)
+- `status: 'loading'` while `AuthInitializer` is restoring session — components must not treat this as unauthenticated
+
+**Exported helpers (`src/lib/auth-store.ts`):**
+
+```typescript
+decodeTokenExp(token: string): number | null
+// Parses exp claim from JWT payload (base64url-decoded JSON). Returns epoch seconds or null.
+
+refreshAccessToken(): Promise<string | null>
+// Calls POST /api/auth/refresh, updates store on success.
+// 401/403 → clearAuth(). 5xx/network error → leaves auth intact (service may be temporarily down).
+// Returns new access_token or null.
+```
 
 ### Session Config Store (Zustand, localStorage)
 
@@ -146,6 +159,28 @@ sequenceDiagram
     end
 ```
 
+### Proactive Token Refresh
+
+`AuthInitializer` (`src/lib/auth-provider.tsx`) schedules a silent refresh before the access token expires:
+
+1. On every `accessToken` change, decode `exp` from JWT payload via `decodeTokenExp`
+2. Schedule `setTimeout` at `exp - 60s` (fires 60 seconds before expiry)
+3. Timer calls `refreshAccessToken()` — on success, store updates with new token → effect re-runs → new timer scheduled (self-rescheduling)
+4. If refresh fails, redirect to `/login?next=<current-path>&reason=session_expired`
+
+The `/login` page renders an amber banner when `reason=session_expired` is present in the query string.
+
+### Retry-on-401
+
+Both `tradeFetch` (`src/lib/trade-fetch.ts`) and `authFetch` (inline in `VaultSection`) implement retry-on-401:
+
+1. Make request with current `accessToken`
+2. On 401: call `refreshAccessToken()`
+3. On success: retry request once with new token
+4. If retry also returns 401 (or refresh returned null): hard redirect to `/login?next=<path>&reason=session_expired`
+
+This covers the gap where a token expires between page load and the user triggering an action.
+
 ---
 
 ## Key Components
@@ -153,11 +188,11 @@ sequenceDiagram
 | Category | Key Components |
 |---|---|
 | **Layout** | `Navigation`, `ThemeProvider`, root layout |
-| **Auth** | `AuthInitializer` (restores token on mount), login/signup forms |
+| **Auth** | `AuthInitializer` — restores token on mount via refresh; schedules proactive silent refresh at `exp-60s`; redirects to `/login?reason=session_expired` on failure |
 | **Config builder** | Multi-step form (Data → Model → Train) using SessionConfig store |
 | **Trade UI** | `SSEProvider` (manages live events from alphaTrade `/stream`), position/order/signal tables |
 | **Charts** | Backtest equity curve (Recharts), candlestick (lightweight-charts) |
-| **Account** | `VaultSection` — encrypted credential storage UI (T212, Polygon, etc.) |
+| **Account** | `VaultSection` — encrypted credential storage UI (T212, Polygon, SMTP, Slack). MinIO credentials are infra-provisioned and not user-editable. |
 | **Models** | Registry browser, model detail, promote/demote actions |
 | **UI primitives** | shadcn/ui — Card, Input, Button, Dialog, Tabs, Select, Toast (Sonner) |
 
@@ -168,5 +203,10 @@ sequenceDiagram
 - **BFF proxies everything**: No direct browser-to-backend calls. Allows service URL changes without frontend deploys.
 - **Access token in-memory only**: Prevents XSS token theft. Refresh token in httpOnly cookie prevents JS access.
 - **Middleware cookie guard**: All routes except `/login`, `/signup`, `/api/auth/*` require `alphakey_session` cookie.
+- **Proactive JWT refresh**: Timer scheduled at `exp - 60s` silently refreshes the access token before it expires. Self-rescheduling via `[accessToken]` useEffect dependency. Avoids mid-session 401s for active users.
+- **Retry-on-401**: All authenticated client-side fetches (`tradeFetch`, vault `authFetch`) attempt one silent token refresh on 401 before redirecting. Covers the window between page load and user action where the token may have expired.
+- **Session-expired redirect**: On unrecoverable 401, redirect to `/login?next=<path>&reason=session_expired`. Login page shows an amber "session expired" banner when this param is present.
+- **5xx / network errors leave auth intact**: `refreshAccessToken` only calls `clearAuth()` on 401/403. Transient upstream failures do not force the user to re-login.
+- **MinIO credentials are infra-only**: `minio_user` / `minio_account` are provisioned at registration on the `AuthUser` profile. They are not user-managed vault entries and do not appear in the vault UI.
 - **`att` CLI binary**: `ATT_BIN` env var points to local `att` binary for `att validate --json` (config validation before submit).
 - **Standalone Next.js output**: `output: "standalone"` in `next.config.mjs` for Docker image minimisation.

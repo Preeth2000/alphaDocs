@@ -25,9 +25,9 @@ Proxies to [[services/alphaKey/alphaKey|alphaKey]] `http://alphakey-api:8000`
 
 | Method | Path | Proxies to | Special handling |
 |---|---|---|---|
-| `POST` | `/api/auth/login` | `POST /auth/login` | Extract refresh_token → httpOnly cookie; fetch /auth/me; return `{access_token, user}` |
+| `POST` | `/api/auth/login` | `POST /auth/login` | Extract refresh_token → httpOnly cookie; fetch /auth/me; return `{access_token, user}`. `/login?reason=session_expired` shows amber expiry banner. |
 | `POST` | `/api/auth/logout` | `POST /auth/logout` | Clear `alphakey_session` cookie; body includes `{jti, exp, refresh_token}` |
-| `POST` | `/api/auth/refresh` | `POST /auth/refresh` | Read httpOnly cookie; inject into body; return new `access_token` |
+| `POST` | `/api/auth/refresh` | `POST /auth/refresh` | Read httpOnly cookie; inject into body; return new `access_token`. On upstream 401/403: clear both cookies so middleware redirects to `/login`. |
 | `POST` | `/api/auth/register` | `POST /auth/register` | Transparent proxy |
 | ALL | `/api/auth/[...path]` | `/auth/[...path]` | Transparent proxy (preserves Authorization header, merges refresh_token) |
 
