@@ -26,7 +26,7 @@ alphaGen trains multi-class (BUY/SELL/HOLD) classifiers on OHLCV price data, val
 | `cli` | `att/cli.py` | Typer CLI: `att train`, `att backtest`, `att validate`, `att verify` |
 | `api` | `att/api/` | FastAPI app, routers, Celery app + worker, DB models |
 | `data` | `att/data/` | OHLCV fetch (yfinance / Polygon), parquet cache, fundamentals |
-| `features` | `att/features/` | TA-Lib indicator computation, normalization, windowing |
+| `features` | `att/features/` | TA-Lib indicator computation, normalization, windowing, fundamentals join; `feature_names` derived from fitted DataFrame columns (not config) |
 | `labels` | `att/labels/` | Label generation strategies (ForwardReturn, TripleBarrier) |
 | `models` | `att/models/` | NN architectures: MLP, LSTM, CNN, Transformer |
 | `train` | `att/train/` | Walk-forward training loop, dataset splits, metrics |
@@ -137,5 +137,5 @@ stateDiagram-v2
 - **Single Celery worker (concurrency=1)**: Prevents GPU/CPU contention during training. Jobs queue.
 - **SSE from Redis pub/sub** (not DB polling): Log lines stream in real-time from worker → Redis → browser. Terminal runs replay from log file.
 - **ONNX as deployment artifact**: Framework-agnostic — alphaTrade uses `onnxruntime`, no PyTorch needed.
-- **Manifest is the contract**: Everything alphaTrade needs (feature_names, window, norm_stats, input_shape, model_hash) is in `manifest.json` — no dependency on training code.
+- **Manifest is the contract**: Everything alphaTrade needs (feature_names, window, norm_stats, input_shape, model_hash) is in `manifest.json` — no dependency on training code. `feature_names` is written from `FeaturePipeline._fitted_columns` (actual fitted DataFrame columns post-`fit_transform`), not reconstructed from config — so fundamentals columns (eps, sector_code, etc.) and optional OHLCV extras (VWAP, Transactions) are always included when present.
 - **MLflow = registry, MinIO = artifacts**: MLflow tracks experiments + aliases; MinIO is the actual binary storage. MLflow links to MinIO paths.

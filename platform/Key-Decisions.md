@@ -214,4 +214,6 @@ Architecture Decision Records (ADRs) for the major design choices across project
 - `norm_stats` enables exact feature normalization replication at inference time
 - Version-stable: manifest is immutable per published version
 
+**Implementation invariant:** `feature_names` is written from `FeaturePipeline._fitted_columns` — the actual column list of the fitted DataFrame after `fit_transform` — not reconstructed from config. This guarantees fundamentals columns (e.g. `reported_eps`, `sector_code`) and conditional OHLCV extras (VWAP, Transactions) are included when present. `feature_names` raises `RuntimeError` if accessed before `fit_transform`. Any caller writing the manifest must call `fit_transform` first.
+
 **Consequences:** If alphaGen changes the feature pipeline format, the manifest schema must be versioned. alphaTrade must support reading manifest schema version 1.0.0.

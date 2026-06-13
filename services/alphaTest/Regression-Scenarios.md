@@ -51,7 +51,7 @@ tags:
 |---|---|---|---|
 | T1 | **[UNIT-R] No normalization leakage** | NormStats persisted in the manifest are computed from the training fold only; recomputing stats on val data and diffing must show a difference (proves split-fitting). | alphagen-bl6 |
 | T2 | **[UNIT-R] Backtest execution timing** | Backtest fills occur on bar t+1 relative to the signal bar; golden test with a synthetic series where same-bar fills would inflate return. | alphagen-tlw |
-| T3 | **[CON] Manifest = inference contract** | For a run with fundamentals + VWAP enabled: `len(feature_names) == n_features == ONNX input width`; alphaTrade adapter builds input from manifest without shape errors. | alphagen-vxw |
+| T3 | **[CON] Manifest = inference contract** | For a run with fundamentals + VWAP enabled: `len(feature_names) == n_features == ONNX input width`; alphaTrade adapter builds input from manifest without shape errors. | ~~alphagen-vxw~~ ✓ fixed |
 | T4 | **[UNIT-R] Embargo ≥ label horizon** | Config with `horizon_bars > embargo_bars` is rejected at validation. | alphagen-usk |
 | T5 | **[UNIT-R] Determinism** | Same config + seed + cached data → identical labels, splits, and (CPU) near-identical metrics across two runs. | sweep seed bead |
 | T6 | **[UNIT-R] Earnings features present** | With fundamentals enabled and stub yfinance data (naive AND tz-aware indices), eps columns appear in the feature frame. | alphagen-7pa |
