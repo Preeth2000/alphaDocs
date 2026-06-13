@@ -40,6 +40,13 @@ Based on platform context, alphaPerf is expected to cover:
 
 ---
 
+
+## Test Catalogue
+
+> Performance budgets + scenario matrix (2026-06-13 review): [[services/alphaPerf/Performance-Test-Plan|Performance Test Plan]]
+
+---
+
 > [!warning] Not implemented
 > No code, no endpoints, no configuration exists yet. This page is a placeholder for planned functionality.
 

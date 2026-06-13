@@ -40,6 +40,13 @@ Based on platform context, alphaTest is expected to cover:
 
 ---
 
+
+## Test Catalogue
+
+> Regression scenario catalogue (2026-06-13 review): [[services/alphaTest/Regression-Scenarios|Regression Scenarios]]
+
+---
+
 > [!warning] Not implemented
 > No code, no endpoints, no configuration exists yet. This page is a placeholder for planned functionality.
 
