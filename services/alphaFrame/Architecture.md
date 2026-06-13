@@ -25,10 +25,11 @@ alphaFrame eliminates per-project infrastructure duplication. Previously alphaGe
 | Container | Image | Purpose |
 |---|---|---|
 | `postgres` | `postgres:16-alpine` | Primary SQL store for all services |
-| `redis` | `redis:7-alpine` | Celery broker/results, pub/sub, token denylist |
+| `redis` | `redis:7-alpine` | Celery broker/results, pub/sub, token denylist — auth required, AOF persistence |
 | `minio` | `minio/minio` | S3-compatible object store for model artifacts |
-| `minio-init` | `minio/mc` | One-shot bucket creation (models, trades, mlflow) |
+| `minio-init` | `minio/mc` | One-shot: creates buckets + per-service scoped users (alphagen/alphatrade/mlflow) |
 | `mlflow` | custom (`mlflow:v3.13.0` + psycopg2 + boto3) | Experiment tracking + model registry |
+| `postgres-backup` | `postgres:16-alpine` | Daily pg_dump of all databases → `postgres_backups` volume (7-day retention) |
 | `nginx` | custom (nginx:alpine + self-signed TLS) | TLS termination + rate-limited reverse proxy |
 
 ### Application Services (joined to platform network)
@@ -37,10 +38,10 @@ alphaFrame eliminates per-project infrastructure duplication. Previously alphaGe
 |---|---|---|
 | `alphakey-api` | `../alphaKey` | Auth / vault service |
 | `alphagen-api` | `../alphaGen` | Training API (runs Alembic upgrade at startup) |
-| `alphagen-worker` | `../alphaGen` | Celery worker (concurrency=1) |
+| `alphagen-worker` | `../alphaGen` | Celery worker (concurrency=1) — capped at 2 CPU / 4G RAM |
 | `alphagen-flower` | `mher/flower` | Celery monitoring UI |
-| `alphatrade` | `../alphaTrade` | Trading executor |
-| `alphalink` | `../alphaLink` | Next.js frontend |
+| `alphatrade` | `../alphaTrade` | Trading executor — reserved 0.5 CPU / 512M, max 2 CPU / 2G |
+| `alphalink` | `../alphaLink` | Next.js frontend — internal only, nginx is sole ingress |
 
 ### Observability Stack (LGTM)
 
@@ -50,7 +51,7 @@ alphaFrame eliminates per-project infrastructure duplication. Previously alphaGe
 | `prometheus` | prom/prometheus:v2.52.0 | Metrics storage (15d), alert evaluation |
 | `loki` | grafana/loki:3.1.0 | Log aggregation (7d) |
 | `tempo` | grafana/tempo:2.5.0 | Trace storage (7d), service graph |
-| `alertmanager` | prom/alertmanager:v0.27.0 | Alert routing (webhook stub → Slack/PagerDuty ready) |
+| `alertmanager` | prom/alertmanager:v0.27.0 | Alert routing — null default receiver; critical route (30s) → Slack + PagerDuty via env vars |
 | `grafana` | grafana/grafana:11.1.0 | Unified UI for all telemetry |
 | `node-exporter` | prom/node-exporter:v1.8.1 | Host CPU/memory/disk metrics |
 | `cadvisor` | gcr.io/cadvisor/cadvisor:v0.49.1 | Per-container resource metrics |
@@ -123,7 +124,7 @@ flowchart LR
     E_LOKI --> Loki[Loki :3100]
 
     Prometheus -->|eval alerts| Alertmanager[Alertmanager :9093]
-    Alertmanager -->|webhook| Stub["localhost:9999 (stub)"]
+    Alertmanager -->|critical: Slack + PagerDuty| External["Slack / PagerDuty (env vars)"]
     Grafana[Grafana :3001] --> Prometheus & Loki & Tempo
 ```
 
@@ -135,14 +136,16 @@ All external traffic enters via Nginx on ports 80/443. Port 80 redirects to HTTP
 
 | Route | Upstream | SSE-safe? | Rate-limited? |
 |---|---|---|---|
+| `/auth/internal/` | — | — | `return 404` — blocked at nginx |
 | `/auth/` | `alphakey-api:8000/auth/` | No | Yes |
-| `/alphagen/` | `alphagen-api:8000/` | No | Yes |
+| `/alphagen/runs/<id>/(events\|log)` | `alphagen-api:8000` | ✅ (proxy_buffering off, 3600s) | No |
 | `/alphagen/runs/events` | `alphagen-api:8000/runs/events` | ✅ (proxy_buffering off, 3600s) | No |
+| `/alphagen/` | `alphagen-api:8000/` | No | Yes |
 | `/stream` | `alphatrade:8081/stream` | ✅ (proxy_buffering off, 3600s) | No |
-| `/` (default) | `alphatrade:8081` | No | Yes |
+| `/` (default) | `alphalink:3000` | No | Yes |
 
-> [!note] Internal network only
-> `/auth/internal/*` is NOT exposed through Nginx — service-to-service only.
+> [!note] Internal-only endpoints
+> `/auth/internal/*` returns 404 at nginx — never proxied. alphaLink has no host port; nginx is the only path to the UI.
 
 ---
 

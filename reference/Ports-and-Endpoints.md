@@ -19,18 +19,24 @@ All ports and internal service addresses used across projectAlpha.
 | Port | Service | Protocol | Access |
 |---|---|---|---|
 | `80` | [[services/alphaFrame/alphaFrame\|Nginx]] | HTTP | Public — redirects to 443 |
-| `443` | [[services/alphaFrame/alphaFrame\|Nginx]] | HTTPS (self-signed) | Public — reverse proxy |
-| `3000` | [[services/alphaLink/alphaLink\|alphaLink]] | HTTP | Public — Next.js frontend |
-| `3001` | Grafana | HTTP | Internal — observability UI |
-| `5000` | MLflow | HTTP | Internal — experiment tracking + registry UI |
-| `5432` | PostgreSQL | TCP | Internal — SQL database |
-| `6379` | Redis | TCP | Internal — Celery broker / pub/sub |
-| `9000` | MinIO | HTTP | Internal — S3-compatible API |
-| `9001` | MinIO | HTTP | Internal — MinIO web console |
-| `9090` | Prometheus | HTTP | Internal — metrics query UI + remote write |
-| `9093` | Alertmanager | HTTP | Internal — alert routing UI |
-| `3100` | Loki | HTTP | Internal — log API |
-| `3200` | Tempo | HTTP | Internal — trace API |
+| `443` | [[services/alphaFrame/alphaFrame\|Nginx]] | HTTPS (self-signed) | Public — reverse proxy (sole ingress) |
+
+All other ports are bound to `127.0.0.1` (localhost only) — not reachable from LAN or external networks.
+
+| Port | Service | Protocol | Localhost-only |
+|---|---|---|---|
+| `3001` | Grafana | HTTP | ✅ — observability UI |
+| `5000` | MLflow | HTTP | ✅ — experiment tracking + registry UI |
+| `5432` | PostgreSQL | TCP | ✅ — SQL database |
+| `6379` | Redis | TCP | ✅ — Celery broker / pub/sub (auth required) |
+| `9000` | MinIO | HTTP | ✅ — S3-compatible API |
+| `9001` | MinIO | HTTP | ✅ — MinIO web console |
+| `9090` | Prometheus | HTTP | ✅ — metrics query UI + remote write |
+| `9093` | Alertmanager | HTTP | ✅ — alert routing UI |
+| `3100` | Loki | HTTP | ✅ — log API |
+| `3200` | Tempo | HTTP | ✅ — trace API |
+| `4317` | OTel Collector | gRPC | ✅ — OTLP trace/metric/log ingress |
+| `4318` | OTel Collector | HTTP | ✅ — OTLP HTTP ingress |
 
 ---
 
@@ -69,11 +75,13 @@ All services communicate via Docker `platform` bridge network using service name
 
 | Path | Upstream | Notes |
 |---|---|---|
-| `/auth/` | `alphakey-api:8000/auth/` | Rate-limited. `/auth/internal/*` NOT exposed |
+| `/auth/internal/` | — | `return 404` — blocked, never proxied |
+| `/auth/` | `alphakey-api:8000/auth/` | Rate-limited |
+| `/alphagen/runs/<id>/(events\|log)` | `alphagen-api:8000` | SSE — no buffering, 3600s timeout, no rate limit |
+| `/alphagen/runs/events` | `alphagen-api:8000/runs/events` | SSE — no buffering, 3600s timeout, no rate limit |
 | `/alphagen/` | `alphagen-api:8000/` | Rate-limited |
-| `/alphagen/runs/events` | `alphagen-api:8000/runs/events` | SSE — no buffering, 3600s timeout |
 | `/stream` | `alphatrade:8081/stream` | SSE — no buffering, 3600s timeout |
-| `/` (default) | `alphatrade:8081` | Rate-limited |
+| `/` (default) | `alphalink:3000` | Rate-limited — Next.js UI |
 
 ---
 
@@ -103,11 +111,13 @@ See [[reference/Event-Channels]] for pub/sub channel names.
 
 ## MinIO Buckets
 
-| Bucket | Contents | Written by | Read by |
-|---|---|---|---|
-| `models` | `model.onnx`, `manifest.json`, `backtest.json` | [[services/alphaGen/alphaGen\|alphaGen]] | [[services/alphaTrade/alphaTrade\|alphaTrade]] |
-| `trades` | Trade logs, reports | [[services/alphaTrade/alphaTrade\|alphaTrade]] | Manual |
-| `mlflow` | MLflow artifact versions | MLflow (via alphaGen) | MLflow, [[services/alphaTrade/alphaTrade\|alphaTrade]] |
+Per-service MinIO users are created by `minio-init` with policies scoped to their bucket only.
+
+| Bucket | Service Account | Contents | Written by | Read by |
+|---|---|---|---|---|
+| `models` | `alphagen` | `model.onnx`, `manifest.json`, `backtest.json` | [[services/alphaGen/alphaGen\|alphaGen]] | [[services/alphaTrade/alphaTrade\|alphaTrade]] |
+| `trades` | `alphatrade` | Trade logs, reports | [[services/alphaTrade/alphaTrade\|alphaTrade]] | Manual |
+| `mlflow` | `mlflow` | MLflow artifact versions | MLflow (via alphaGen) | MLflow, [[services/alphaTrade/alphaTrade\|alphaTrade]] |
 
 ---
 

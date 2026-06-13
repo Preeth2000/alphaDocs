@@ -37,11 +37,12 @@ alphaFrame is **pure infrastructure** — it receives no application-layer reque
 | [[services/alphaTrade/alphaTrade\|alphaTrade]] | TCP :5432 | SQL | `alphatrade` database queries |
 | MLflow server | TCP :5432 | SQL | `mlflow` database queries |
 | All app services | TCP :6379 | Redis protocol | Pub/sub, Celery broker, token denylist |
-| [[services/alphaGen/alphaGen\|alphaGen]], [[services/alphaTrade/alphaTrade\|alphaTrade]] | HTTP :9000 | S3 API | Model artifacts (models bucket), trade logs (trades bucket), MLflow artifacts (mlflow bucket) |
+| [[services/alphaGen/alphaGen\|alphaGen]], [[services/alphaTrade/alphaTrade\|alphaTrade]] | HTTP :9000 | S3 API | Model artifacts (models bucket), trade logs (trades bucket), MLflow artifacts (mlflow bucket) — each service uses a scoped MinIO account |
+| `postgres-backup` | pg_dump → volume | Compressed SQL | Daily backup of all databases to `postgres_backups` volume; 7-day retention |
 | All app services | HTTP :5000 | REST | MLflow experiment tracking + model registry API |
 | [[services/alphaLink/alphaLink\|alphaLink]] | HTTP/HTTPS | Proxied REST + SSE | Nginx forwards to app services |
 | Grafana | HTTP | Dashboard queries | Prometheus metrics, Loki logs, Tempo traces |
-| Alertmanager | HTTP | Alert delivery | Fires webhook to `localhost:9999` (stub) |
+| Alertmanager | HTTP | Alert delivery | `severity=critical` → Slack + PagerDuty (env vars); non-critical silently dropped |
 
 ---
 
