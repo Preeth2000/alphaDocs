@@ -15,20 +15,20 @@ tags:
 ## Inbound Endpoints
 
 **Base URL:** `http://alphagen-api:8000` (internal) | `https://localhost/alphagen/` (via Nginx)  
-**Auth:** Bearer JWT (when `AUTH_MODE=alphakey`) or unauthenticated (when `AUTH_MODE=legacy`)
+**Auth:** Bearer JWT required on all `/runs` and `/runs/{id}/*` endpoints. Missing or invalid token → `401`. Valid token for wrong owner → `403`. JWKS fetched from [[services/alphaKey/alphaKey|alphaKey]] `/auth/.well-known/jwks.json` (cached 10 min). `/health`, `/config/*`, `/models/*`, `/runs/events` are unauthenticated.
 
 ### Run Management
 
-| Method | Path | Purpose | Caller | DB Reads | DB Writes |
-|---|---|---|---|---|---|
-| `POST` | `/runs` | Create training job, enqueue Celery task | [[services/alphaLink/alphaLink\|alphaLink]] | 0 | 1 (INSERT Run) |
-| `GET` | `/runs` | List runs (filter by status, run_name, limit, offset) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 (SELECT filtered) | 0 |
-| `GET` | `/runs/{run_id}` | Get full run state | [[services/alphaLink/alphaLink\|alphaLink]] | 1 (SELECT by id) | 0 |
-| `DELETE` | `/runs/{run_id}` | Cancel: revoke Celery task, publish cancelled event | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 (UPDATE status→cancelled) |
-| `POST` | `/runs/{run_id}/force-save` | Re-queue gate-failed run with `force_save=True` | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 2 (INSERT new run, UPDATE original) |
-| `POST` | `/runs/{run_id}/publish` | Push artifacts to MinIO, fire model.ready | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 (UPDATE run: minio_version, artifact_prefix) |
-| `GET` | `/runs/{run_id}/log` | **SSE** — stream log lines + status events | [[services/alphaLink/alphaLink\|alphaLink]] | 1 (SELECT run state) | 0 |
-| `GET` | `/runs/events` | **SSE** — global model.ready channel | [[services/alphaTrade/alphaTrade\|alphaTrade]] | 0 | 0 |
+| Method | Path | Purpose | Caller | DB Reads | DB Writes | Auth |
+|---|---|---|---|---|---|---|
+| `POST` | `/runs` | Create training job, enqueue Celery task | [[services/alphaLink/alphaLink\|alphaLink]] | 0 | 1 (INSERT Run) | 🔒 JWT |
+| `GET` | `/runs` | List runs scoped to caller's `user_id` (filter by status, run_name, limit, offset) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 (SELECT filtered) | 0 | 🔒 JWT |
+| `GET` | `/runs/{run_id}` | Get full run state (owner only) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 (SELECT by id) | 0 | 🔒 JWT + 403 |
+| `DELETE` | `/runs/{run_id}` | Cancel: revoke Celery task, publish cancelled event (owner only) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 (UPDATE status→cancelled) | 🔒 JWT + 403 |
+| `POST` | `/runs/{run_id}/force-save` | Re-queue gate-failed run with `force_save=True` (owner only) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 2 (INSERT new run, UPDATE original) | 🔒 JWT + 403 |
+| `POST` | `/runs/{run_id}/publish` | Push artifacts to MinIO, fire model.ready (owner only) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 (UPDATE run: minio_version, artifact_prefix) | 🔒 JWT + 403 |
+| `GET` | `/runs/{run_id}/log` | **SSE** — stream log lines + status events (owner only) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 (SELECT run state) | 0 | 🔒 JWT + 403 |
+| `GET` | `/runs/events` | **SSE** — global model.ready channel | [[services/alphaTrade/alphaTrade\|alphaTrade]] | 0 | 0 | Open |
 
 ### Config
 

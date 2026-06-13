@@ -124,7 +124,8 @@ stateDiagram-v2
 
 ## Multi-Tenancy
 
-- Each run has `user_id` and `visibility` (private | public)
+- Each run has `user_id` (set from JWT `sub` claim at creation) and `visibility` (private | public)
+- All `/runs` endpoints require Bearer JWT via `att.security.alphakey_auth.require_auth`; endpoints that operate on a specific run (`GET`, `DELETE`, `force-save`, `publish`, `log`) enforce `run.user_id == claims.sub` and return `403` on mismatch
 - MinIO paths namespaced: `{minio_user}/{minio_account}/{run_name}/{version}/`
 - alphaKey vault provides per-user `minio_user`, `minio_account`, `POLYGON_API_KEY` (when `SECRETS_SOURCE=alphakey`)
 - Public runs visible to all users via `GET /models` with visibility filter

@@ -33,11 +33,9 @@ Source: `alphaGen/.env.example`
 | `POLYGON_API_KEY` | — | ⬜ | Polygon.io data provider API key (if provider=polygon) |
 | `OTEL_SERVICE_NAME` | `alphagen-api` / `alphagen-worker` | ⬜ | OTel service name for traces/metrics |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | ⬜ | OTel Collector OTLP endpoint |
-| `ALPHAKEY_URL` | `http://alphakey-api:8000` | ⬜ | alphaKey service URL (when AUTH_MODE=alphakey) |
+| `ALPHAKEY_URL` | `http://alphakey-api:8000` | ✅ | alphaKey service URL — JWKS fetched for JWT verification on all `/runs` routes |
 | `ALPHAKEY_SERVICE_TOKEN` | — | ⬜ | Service-to-service token for alphaKey vault API |
-| `ALPHAKEY_USER_ID` | — | ⬜ | Default user UUID for multi-tenant MinIO namespace |
 | `SECRETS_SOURCE` | `env` | ⬜ | `env` (vars) or `alphakey` (vault-fetched) |
-| `AUTH_MODE` | `legacy` | ⬜ | `legacy` (no JWT) or `alphakey` (JWT required) |
 
 ---
 

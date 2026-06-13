@@ -30,7 +30,7 @@ tags:
 | [[services/alphaTrade/alphaTrade\|alphaTrade]] | `GET /runs/events` (SSE) | — | On alphaTrade startup | `runs.py run_events()` → listens for model.ready |
 | Celery (Redis db0) | Internal task | Pickled task args | After POST /runs | `worker.py train_and_export()` |
 | yfinance / Polygon.io | HTTP | OHLCV JSON/CSV | Inside Celery task | `att.data.fetch` |
-| [[services/alphaKey/alphaKey\|alphaKey]] JWKS | `GET /auth/.well-known/jwks.json` | JWK Set JSON | On token verification | `att.security.alphakey_auth` |
+| [[services/alphaKey/alphaKey\|alphaKey]] JWKS | `GET /auth/.well-known/jwks.json` | JWK Set JSON | Every `/runs` request (JWKS cached 10 min) | `att.security.alphakey_auth.require_auth` |
 | [[services/alphaKey/alphaKey\|alphaKey]] vault | `GET /auth/internal/secrets/{user_id}` | JSON secrets | When `SECRETS_SOURCE=alphakey` | `att.secrets.alphakey_client` |
 
 ---
@@ -58,7 +58,7 @@ tags:
 | [[services/alphaFrame/alphaFrame\|alphaFrame]] → Redis | Celery broker (db0), results (db1), pub/sub | ✅ |
 | [[services/alphaFrame/alphaFrame\|alphaFrame]] → MinIO | `models` bucket for artifact storage | ✅ |
 | [[services/alphaFrame/alphaFrame\|alphaFrame]] → MLflow | Experiment tracking + model registry | ✅ |
-| [[services/alphaKey/alphaKey\|alphaKey]] | JWT JWKS (token verification) | ⬜ (when AUTH_MODE=alphakey) |
+| [[services/alphaKey/alphaKey\|alphaKey]] | JWT JWKS (token verification for all `/runs` routes) | ✅ |
 | [[services/alphaKey/alphaKey\|alphaKey]] | Vault secrets (Polygon key, MinIO creds) | ⬜ (when SECRETS_SOURCE=alphakey) |
 | yfinance (public API) | OHLCV historical data | ✅ (when provider=yfinance) |
 | Polygon.io | OHLCV data (intraday) | ⬜ (when provider=polygon) |
