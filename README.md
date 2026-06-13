@@ -49,6 +49,7 @@ last-reviewed: 2026-06-06
 | [[platform/Features]] | All platform features grouped by domain |
 | [[platform/Tech-Stack]] | Full tech stack per service + shared infra |
 | [[platform/Key-Decisions]] | Architecture decision records (comms, security, scaling, observability) |
+| [[platform/COMPLIANCE]] | Open compliance items (T212 ToS, FCA perimeter, GDPR, production secrets) |
 
 ---
 
