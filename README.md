@@ -35,7 +35,7 @@ last-reviewed: 2026-06-06
 | [[services/alphaGen/alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
 | [[services/alphaTrade/alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — broker, risk, scheduler, consensus | 8001 |
 | [[services/alphaLink/alphaLink\|alphaLink]] | 🟢 Full | Frontend UI — Next.js + BFF proxy | 3000 |
-| [[services/alphaKey/alphaKey\|alphaKey]] | 🟡 Partial | Auth & account management | 8002 |
+| [[services/alphaKey/alphaKey\|alphaKey]] | 🟡 Partial | Auth & account management | 8000 |
 | [[services/alphaTest/alphaTest\|alphaTest]] | ⬜ Planned | Regression testing suite | TBD |
 | [[services/alphaPerf/alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing suite | TBD |
 
