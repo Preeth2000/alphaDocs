@@ -259,33 +259,34 @@ decrypted on read. Aligns with [[services/alphaTest/Regression-Scenarios|V5]].
 
 ---
 
-## 3. alphaGen — auth claim alignment + config docs
+## 3. alphaGen — auth claim alignment + config docs — ✅ CLOSED (2026-06-14)
+
+> [!success] All items closed — alphaGen session 2026-06-14
+> Both items landed in one session. See alphaGen commit `32e7d36` (iss/aud verifier + contract tests)
+> and alphaDocs commit `26cb07d` (Config.md entries).
 
 **Driver:** [[services/alphaKey/alphaKey|alphaKey]] `iss`/`aud` claims; [[services/alphaFrame/alphaFrame|alphaFrame]]
 scoped MinIO accounts.
 
-### 3.1 JWT `iss` / `aud` validation — **P1**
+### 3.1 JWT `iss` / `aud` validation — ✅ Done
 **Why:** alphaGen now requires Bearer JWT on all `/runs` routes via
 `att.security.alphakey_auth.require_auth`, verifying ES256 against alphaKey JWKS
 (see [[services/alphaGen/API]], [[services/alphaGen/Interactions]]). The documented verify path
 checks signature + `exp` but predates the new `iss`/`aud` claims.
 
-**Build:** Extend the verifier to validate `iss=alphakey` and `aud=alphakey` (configurable via
-`JWT_ISSUER`/`JWT_AUDIENCE`), consistent with alphaKey and alphaTrade. Ensure tokens carrying these
-claims are not rejected, and tokens with the wrong values are.
+**Done:** Extended `verify_token` in `att.security.alphakey_auth` to validate `iss` and `aud` via
+PyJWT `issuer`/`audience` params. Configurable via `JWT_ISSUER`/`JWT_AUDIENCE` (default: `alphakey`).
+`Claims` dataclass gains `iss` and `aud` fields. Five new contract tests (valid, wrong-issuer,
+wrong-audience, missing-iss, env-override) all pass. `JWT_ISSUER`/`JWT_AUDIENCE` added to
+[[services/alphaGen/Config]].
 
-**Acceptance:** Valid tokens authenticate on `/runs/*`; mismatched `aud`/`iss` rejected.
-Aligns with [[services/alphaTest/Regression-Scenarios|T12]] (ownership / auth) and A-suite.
-
-### 3.2 Document scoped MinIO credentials — **P2 (doc gap)**
+### 3.2 Document scoped MinIO credentials — ✅ Done
 **Why:** [[services/alphaFrame/alphaFrame|alphaFrame]] now creates a per-service MinIO user
 (`alphagen` → `models` bucket only) and injects `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` into
 `alphagen-api`/`alphagen-worker`. [[services/alphaGen/Config]] does not document these variables.
 
-**Build:** Add `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` (scoped account, not MinIO root) to
-[[services/alphaGen/Config]]. Confirm the publish path uses them.
-
-**Acceptance:** alphaGen config docs list the scoped MinIO credentials and match what compose injects.
+**Done:** `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` (scoped account, not MinIO root) added to
+[[services/alphaGen/Config]].
 
 ---
 
@@ -336,18 +337,23 @@ updated to show authenticated URL format.
 
 ---
 
-## 5. alphaKey — outbound contract publication
+## 5. alphaKey — outbound contract publication — ✅ CLOSED (2026-06-14)
+
+> [!success] Closed — documentation updated
+> Both items below are complete. No further backlog action for alphaKey outbound contract work.
 
 **Driver:** alphaKey is the **source** of most changes; its remaining cross-service duty is to make
 the contract unambiguous for consumers.
 
-- **Publish the JWT claim + JWKS contract — P2.** Document the full claim set now issued
-  (`iss`, `aud`, `sub`, `role`, `jti`, `tv`, `iat`, `exp`, plus `kid` in the header) in a place
-  consumers reference, so alphaGen (§3.1) and alphaTrade (§2.2) validate identically. The verify
-  path is: JWKS → find key by `kid` (header) → verify signature → check `exp`/`iss`/`aud` →
-  Redis denylist by `jti` → `tv` matches `user.token_version`. See [[services/alphaKey/Architecture]].
-- `alphakey rotate-master-key` CLI is already documented (idempotent, `--dry-run`); ensure the
-  rotation runbook in [[services/alphaFrame/alphaFrame|alphaFrame]] (§4.5) references it.
+- **Publish the JWT claim + JWKS contract — P2. ✅** Added a dedicated **JWT Consumer Contract**
+  section to [[services/alphaKey/Architecture]] covering: header (`kid`) vs payload claim table,
+  configurable `iss`/`aud` via `JWT_ISSUER`/`JWT_AUDIENCE`, and a numbered 8-step verification
+  sequence (JWKS lookup → ES256 verify → exp/iss/aud → Redis denylist by `jti` → `tv` check).
+  Also fixed the misleading JSON example that showed `kid` in the payload.
+- **Rotation runbook references CLI — P2. ✅** Updated [[services/alphaFrame/Config]] with a
+  **KEK Rotation** runbook section: 6-step procedure referencing `alphakey rotate-master-key`,
+  `--dry-run` pre-flight, idempotency note, and warning against premature key removal. Table entry
+  for `VAULT_MASTER_KEY_1` now names the CLI and explains monotonic versioning.
 
 ---
 
@@ -384,9 +390,9 @@ session-management features now in alphaKey.
 | Priority | Items |
 |---|---|
 | **P0** | 1.1 password-reset UI · 1.2 MFA UI + step-up · 1.3 sessions UI |
-| **P1** | 1.4 lockout UX · 2.1 model.ready consumer · 2.2 alphaTrade iss/aud (code) · 2.3 DB_SECRETS_KEY (verify migration-safe fallback) · 3.1 alphaGen iss/aud (code) |
-| **P2** | 1.5 admin enable/disable · 1.6 consensus gates UI · 1.7 bulk delete · 3.2 MinIO creds docs · 5 JWT claim contract |
-| **✅ Closed** | §4 all alphaFrame wiring (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
+| **P1** | 1.4 lockout UX · 2.1 model.ready consumer · 2.2 alphaTrade iss/aud (code) · 2.3 DB_SECRETS_KEY (verify migration-safe fallback) |
+| **P2** | 1.5 admin enable/disable · 1.6 consensus gates UI · 1.7 bulk delete |
+| **✅ Closed** | §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
 
 ---
 
