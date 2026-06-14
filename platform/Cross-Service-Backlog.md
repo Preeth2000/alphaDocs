@@ -42,14 +42,17 @@ last-reviewed: 2026-06-14
 
 ---
 
-## 1. alphaLink (UI / BFF) — largest backlog
+## 1. alphaLink (UI / BFF) — ✅ CLOSED (2026-06-14)
+
+> [!success] All 7 items closed — alphaLink session 2026-06-14
+> All P0/P1/P2 alphaLink items landed in one session. Commits `3de28b6` (auth flows) and
+> `bed3bd2` (lockout, bulk delete, consensus gates, admin) in the alphaLink repo.
+> alphaDocs updated in commits `8901e0a` and `463a9de`.
 
 **Driver:** [[services/alphaKey/alphaKey|alphaKey]] shipped a large set of **user-facing** auth
 features (password reset, MFA, session management, admin enable, login lockout) and
 [[services/alphaTrade/alphaTrade|alphaTrade]] added two operator features (consensus gates,
-bulk delete). alphaLink is the **only** UI in the platform. Today it has exactly three auth-adjacent
-pages — `/login`, `/signup`, `/account` — plus a catch-all auth proxy. None of the new alphaKey
-flows have a page or a dedicated BFF route, so they are unreachable by users.
+bulk delete). alphaLink is the **only** UI in the platform.
 
 > [!note] BFF pattern reminder
 > Browser never calls backends directly. Every backend call goes through a Next.js route handler
@@ -58,7 +61,7 @@ flows have a page or a dedicated BFF route, so they are unreachable by users.
 > `Authorization: Bearer <token>` using `bearerHeader(token)`. Add new BFF routes the same way.
 > See [[services/alphaLink/Architecture]] and [[services/alphaLink/API]].
 
-### 1.1 Password reset flow — **P0**
+### 1.1 Password reset flow — ✅ Done (2026-06-14)
 **Why:** alphaKey added `POST /auth/forgot-password` and `POST /auth/reset-password`
 (see [[services/alphaKey/API]]). No UI or BFF route exists, so a user who forgets their password
 is permanently locked out.
@@ -94,7 +97,7 @@ is permanently locked out.
 [[services/alphaFrame/alphaFrame|alphaFrame]] — see §4.1), set a new password, and log in with it;
 old sessions are dead. The non-existent-email path is visually indistinguishable from the success path.
 
-### 1.2 MFA / TOTP — **P0**
+### 1.2 MFA / TOTP — ✅ Done (2026-06-14)
 **Why:** alphaKey added `POST /auth/me/totp/setup`, `/verify`, `/disable`, the `user.totp_secret_encrypted`
 + `user.totp_enabled` columns, and a **login step-up**: when `totp_enabled=true`, `POST /auth/login`
 requires a `totp_code` field; without it login returns `401` with header `X-TOTP-Required: true`.
@@ -127,7 +130,7 @@ requires a `totp_code` field; without it login returns `401` with header `X-TOTP
 then on next login is prompted for a code and cannot log in without it; disabling MFA requires a
 valid current code. New regression scenario required — see §6.
 
-### 1.3 Active session management — **P0**
+### 1.3 Active session management — ✅ Done (2026-06-14)
 **Why:** alphaKey added `GET /auth/me/sessions` (list active refresh tokens) and
 `DELETE /auth/me/sessions/{id}` (revoke one). No UI exists.
 
@@ -143,7 +146,7 @@ valid current code. New regression scenario required — see §6.
 access token is rejected platform-wide within ~1s (denylist). Aligns with
 [[services/alphaTest/Regression-Scenarios|A6]] (kill-switch / session lifecycle).
 
-### 1.4 Login lockout / rate-limit UX — **P1**
+### 1.4 Login lockout / rate-limit UX — ✅ Done (2026-06-14)
 **Why:** alphaKey added login rate limiting: **20 attempts / IP / 5 min** and
 **5 failures / account / 15 min**, with a 15-minute account lockout (Redis keys
 `alphakey:rl:ip:*`, `alphakey:rl:acct:*`, `alphakey:lockout:*`). The login endpoint will now
@@ -156,7 +159,7 @@ error. Do not retry automatically. Do not leak whether the email exists.
 **Acceptance:** Repeated bad logins surface a lockout message, not a credentials error.
 Aligns with [[services/alphaTest/Regression-Scenarios|A10]] (brute-force lockout).
 
-### 1.5 Admin user management — enable / disable — **P2**
+### 1.5 Admin user management — enable / disable — ✅ Done (2026-06-14)
 **Why:** alphaKey added `PATCH /auth/admin/users/{uid}/enable` and changed
 `PATCH /auth/admin/users/{uid}/disable` to bump `token_version` + revoke all refresh tokens on
 disable. There is no admin UI section in alphaLink today.
@@ -169,7 +172,7 @@ immediately logged out everywhere.
 **Acceptance:** An admin can disable a user (who is then unable to log in or refresh) and re-enable
 them. Aligns with [[services/alphaTest/Regression-Scenarios|A6]].
 
-### 1.6 Consensus confidence gates in model-override editor — **P2**
+### 1.6 Consensus confidence gates in model-override editor — ✅ Done (2026-06-14)
 **Why:** alphaTrade added `consensus_min_confidence` and `consensus_min_margin` to the per-model /
 risk config (see [[services/alphaTrade/Config]]). The override editor UI does not expose them.
 
@@ -180,7 +183,7 @@ signals below these thresholds are coerced to HOLD.
 
 **Acceptance:** Operator can set both gates per model from the UI and see them persisted.
 
-### 1.7 Bulk model delete — **P2**
+### 1.7 Bulk model delete — ✅ Done (2026-06-14)
 **Why:** alphaTrade added `DELETE /models` (bulk) with body `{run_names: [...]}`, ownership-checked
 per model, executed in parallel via `asyncio.gather`.
 
@@ -394,10 +397,8 @@ session-management features now in alphaKey.
 
 | Priority | Items |
 |---|---|
-| **P0** | 1.1 password-reset UI · 1.2 MFA UI + step-up · 1.3 sessions UI |
-| **P1** | 1.4 lockout UX |
-| **P2** | 1.5 admin enable/disable · 1.6 consensus gates UI · 1.7 bulk delete |
-| **✅ Closed** | §2.1 model.ready consumer (2026-06-14) · §2.2 alphaTrade iss/aud (2026-06-14) · §2.3 DB_SECRETS_KEY (2026-06-14) · §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
+| **✅ Closed** | §1 all alphaLink items (2026-06-14) · §2.1 model.ready consumer (2026-06-14) · §2.2 alphaTrade iss/aud (2026-06-14) · §2.3 DB_SECRETS_KEY (2026-06-14) · §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
+| **Open** | None — backlog fully cleared |
 
 ---
 
