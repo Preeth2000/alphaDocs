@@ -18,7 +18,7 @@ tags:
 |---|---|---|---|---|
 | [[services/alphaGen/alphaGen\|alphaGen]] | MinIO S3 download | `model.onnx`, `manifest.json` | ModelSyncDaemon poll (every 60s) | `adapter/model_sync.py` |
 | [[services/alphaFrame/alphaFrame\|MLflow]] | SDK `search_registered_models` | Model registry metadata | ModelSyncDaemon poll | `adapter/model_sync.py` |
-| [[services/alphaGen/alphaGen\|alphaGen]] | SSE `GET /runs/events` | `model.ready` JSON event | On alphaGen publish | `runs.py run_events()` → triggers sync |
+| [[services/alphaGen/alphaGen\|alphaGen]] | Redis pub/sub `model.ready` | `{run_name, version, published_at, artifact_prefix?}` | On alphaGen publish | `store/model_sync.py ModelSyncDaemon._listen_model_ready()` — artifact_prefix present → MinIO direct; absent → MLflow poll |
 | Trading 212 API | HTTP GET | OHLCV JSON | Per bar-close tick | `broker/t212_client.py` |
 | yfinance | HTTP | OHLCV DataFrame | Per bar-close tick | `data/yfinance_provider.py` |
 | Polygon.io | HTTP | OHLCV JSON | Per bar-close tick (if enabled) | `data/polygon_provider.py` |

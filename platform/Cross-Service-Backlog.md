@@ -197,7 +197,7 @@ a BFF route that proxies `DELETE /models` with the selected `run_names`. Surface
 [[services/alphaKey/alphaKey|alphaKey]] added `iss`/`aud` JWT claims; [[services/alphaFrame/alphaFrame|alphaFrame]]
 now provisions per-service secrets that alphaTrade must consume.
 
-### 2.1 Update the `model.ready` consumer — **P1 (contract change)**
+### 2.1 Update the `model.ready` consumer — ✅ Done (2026-06-14)
 **Why:** The event payload changed. alphaTrade consumes it in `runs.py run_events()` via the
 SSE `GET /runs/events` stream (see [[services/alphaTrade/Interactions]] and [[reference/Event-Channels]]).
 
@@ -230,7 +230,7 @@ triggers `model_sync` correctly. Aligns with [[services/alphaTest/Regression-Sce
 (model.ready schema — single versioned shape, consumers tolerate unknown fields) and the upstream
 contract test `tests/contract/test_model_ready_schema.py`.
 
-### 2.2 JWT `iss` / `aud` validation — **P1**
+### 2.2 JWT `iss` / `aud` validation — ✅ Done (2026-06-14)
 **Why:** alphaKey now writes `iss: "alphakey"` and `aud: "alphakey"` into every JWT and verifies
 them on decode (see [[services/alphaKey/Architecture]]). alphaTrade verifies tokens via
 `make_jwt_dep` (ES256 against alphaKey JWKS).
@@ -244,7 +244,7 @@ by default, set the expected `aud`/`iss` (`alphakey`, overridable via `JWT_AUDIE
 with a wrong `aud`/`iss` are rejected. Aligns with [[services/alphaTest/Regression-Scenarios|L16]]
 (API auth enforced).
 
-### 2.3 Secrets-at-rest key from infra — **P1**
+### 2.3 Secrets-at-rest key from infra — ✅ Done (2026-06-14)
 **Why:** alphaTrade added Fernet at-rest encryption for `BotSettings` secret columns (API keys,
 SMTP password, Slack webhook), gated on `DB_SECRETS_KEY` (see [[services/alphaTrade/Config]] and
 [[services/alphaTrade/Architecture]]). Without the key, secrets are stored in **plaintext**.
@@ -390,9 +390,9 @@ session-management features now in alphaKey.
 | Priority | Items |
 |---|---|
 | **P0** | 1.1 password-reset UI · 1.2 MFA UI + step-up · 1.3 sessions UI |
-| **P1** | 1.4 lockout UX · 2.1 model.ready consumer · 2.2 alphaTrade iss/aud (code) · 2.3 DB_SECRETS_KEY (verify migration-safe fallback) |
+| **P1** | 1.4 lockout UX |
 | **P2** | 1.5 admin enable/disable · 1.6 consensus gates UI · 1.7 bulk delete |
-| **✅ Closed** | §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
+| **✅ Closed** | §2.1 model.ready consumer (2026-06-14) · §2.2 alphaTrade iss/aud (2026-06-14) · §2.3 DB_SECRETS_KEY (2026-06-14) · §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
 
 ---
 
