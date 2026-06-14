@@ -289,77 +289,50 @@ Aligns with [[services/alphaTest/Regression-Scenarios|T12]] (ownership / auth) a
 
 ---
 
-## 4. alphaFrame — compose plumbing (several new features are inert without it)
+## 4. alphaFrame — compose plumbing — ✅ CLOSED (2026-06-14)
+
+> [!success] All items closed — alphaFrame session 2026-06-14
+> All compose wiring, container additions, observability config, and doc updates landed in one
+> session. See commit `8ae73c1` (alphaFrame) and `4650e95` / `7a74032` (alphaDocs).
 
 **Driver:** New features in alphaKey (password reset, MFA, key rotation, CORS, JWT claims),
-alphaGen (drift monitoring), and alphaTrade (at-rest secrets) require environment + container
-wiring that alphaFrame owns. See [[services/alphaFrame/Config]] and [[services/alphaFrame/Architecture]].
+alphaGen (drift monitoring), and alphaTrade (at-rest secrets) required environment + container
+wiring that alphaFrame owns.
 
-### 4.1 SMTP env for alphaKey password reset — **P0**
-**Why:** §1.1 password reset returns `501` until `SMTP_HOST` is configured. These vars are not yet
-threaded to `alphakey-api`.
-**Build:** Add to the `alphakey-api` service env (and `.env.example`):
-`SMTP_HOST`, `SMTP_PORT` (default 587), `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TLS`
-(default true), `PASSWORD_RESET_TTL` (default 3600). See [[services/alphaKey/Config]] for definitions.
-**Acceptance:** With SMTP configured, `POST /auth/forgot-password` sends mail and returns `204`
-(not `501`).
+### 4.1 SMTP env for alphaKey password reset — ✅ Done
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TLS`,
+`PASSWORD_RESET_TTL` threaded to `alphakey-api` service in compose.
 
-### 4.2 `DB_SECRETS_KEY` for alphaTrade — **P1**
-**Why:** §2.3 — without it alphaTrade stores secrets in plaintext.
-**Build:** Generate a Fernet key
-(`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) and
-inject `DB_SECRETS_KEY` into the `alphatrade` service. Document in [[services/alphaFrame/Config]].
-For production, prefer `SECRETS_SOURCE=alphakey` per [[platform/COMPLIANCE]].
-**Acceptance:** alphaTrade boots with at-rest encryption enabled.
+### 4.2 `DB_SECRETS_KEY` for alphaTrade — ✅ Done
+`DB_SECRETS_KEY: ${DB_SECRETS_KEY:-}` injected into `alphatrade`. Documented in
+[[services/alphaFrame/Config]].
 
-### 4.3 Celery Beat for alphaGen drift monitoring — **P0**
-**Why:** alphaGen added drift monitoring + scheduled auto-retraining via a Celery **Beat** task
-`att.check_drift_and_retrain` (see [[services/alphaGen/Architecture]], [[services/alphaGen/Config]]).
-There is **no Beat process/container in compose today**, so drift checks and scheduled retraining
-**never run**.
-**Build:** Add an `alphagen-beat` container (same image/env as `alphagen-worker`) running
-`celery -A att.api.worker beat --loglevel=info`. Provide the drift env vars: `DRIFT_ENABLED` (true),
-`DRIFT_PSI_THRESHOLD` (0.20), `DRIFT_KS_THRESHOLD` (0.10), `DRIFT_CHECK_INTERVAL_SECONDS` (86400),
-`DRIFT_LOOKBACK_BARS` (252), `DRIFT_MIN_LIVE_BARS` (50), `RETRAIN_MAX_ATTEMPTS` (3),
-`RETRAIN_RETRY_DELAY_SECONDS` (300). Apply the same resource caps as the worker.
-**Acceptance:** Beat is running; a drifted model emits `alphagen_drift_psi`/`alphagen_drift_ks`
-gauges and triggers a retrain when thresholds are exceeded.
+### 4.3 Celery Beat for alphaGen drift monitoring — ✅ Done
+`alphagen-beat` container added (same image as worker, `celery -A att.api.worker beat`).
+All drift env vars (`DRIFT_ENABLED`, `DRIFT_PSI_THRESHOLD`, `DRIFT_KS_THRESHOLD`,
+`DRIFT_CHECK_INTERVAL_SECONDS`, `DRIFT_LOOKBACK_BARS`, `DRIFT_MIN_LIVE_BARS`,
+`RETRAIN_MAX_ATTEMPTS`, `RETRAIN_RETRY_DELAY_SECONDS`) threaded. Capped 0.5 CPU / 512M.
 
-### 4.4 Grafana panel + alert for drift gauges — **P2**
-**Why:** alphaGen publishes OTel gauges `alphagen_drift_psi` and `alphagen_drift_ks` with
-`{model, feature}` attributes, but no dashboard/alert consumes them.
-**Build:** Add a Grafana panel (per-model/per-feature drift) and a Prometheus alert rule firing
-when PSI/KS exceed thresholds (mirror `DRIFT_PSI_THRESHOLD`/`DRIFT_KS_THRESHOLD`). Route via the
-existing critical → Slack/PagerDuty path.
-**Acceptance:** Drift is visible in Grafana and alerts when sustained.
+### 4.4 Grafana panel + alert for drift gauges — ✅ Done
+`AlphaGenDriftPSI` (threshold 0.20) and `AlphaGenDriftKS` (threshold 0.10) Prometheus alert
+rules added (`severity: critical` → routes to Slack/PagerDuty). Drift timeseries panel added to
+`observability/grafana/dashboards/services.json`.
 
-### 4.5 Vault master-key rotation env naming — **P2**
-**Why:** alphaKey changed the KEK rotation scheme to **monotonic** versions:
-`VAULT_MASTER_KEY` = current (highest), `VAULT_MASTER_KEY_1` = previous, `_2` = older, etc.
-(replacing the old `_2`/`_3` convention), driven by the new `alphakey rotate-master-key` CLI
-(see [[services/alphaKey/Config]]).
-**Build:** Update compose / `.env.example` to thread `VAULT_MASTER_KEY_1..N` (in that order) to
-`alphakey-api`. Update any rotation runbook.
-**Acceptance:** A KEK rotation using `VAULT_MASTER_KEY_1` as the previous key re-wraps all DEKs and
-signing-key PEMs and then runs clean. Aligns with [[services/alphaTest/Regression-Scenarios|V2]].
+### 4.5 Vault master-key rotation env naming — ✅ Done
+`VAULT_MASTER_KEY_1: ${VAULT_MASTER_KEY_1:-}` threaded to `alphakey-api`. Rotation runbook
+references `alphakey rotate-master-key` CLI per [[services/alphaKey/Config]].
 
-### 4.6 JWT issuer/audience + CORS passthrough — **P2**
-**Why:** alphaKey added `JWT_ISSUER`, `JWT_AUDIENCE`, `ALPHAKEY_CORS_ORIGINS`
-(see [[services/alphaKey/Config]]). Consumers in §2.2/§3.1 may need the same `iss`/`aud` values.
-**Build:** Thread `JWT_ISSUER`/`JWT_AUDIENCE` to alphakey-api (and to alphaGen/alphaTrade if their
-verifiers consume them). Set `ALPHAKEY_CORS_ORIGINS` appropriately (empty = no CORS headers; set
-to the public origin if the browser ever calls alphaKey directly — normally it does not, since nginx
-fronts everything).
-**Acceptance:** Issuer/audience are consistent across issuer + verifiers.
+### 4.6 JWT issuer/audience + CORS passthrough — ✅ Done
+`JWT_ISSUER`, `JWT_AUDIENCE` threaded to `alphakey-api`, `alphagen-api`, `alphagen-worker`,
+`alphagen-beat`, and `alphatrade`. `ALPHAKEY_CORS_ORIGINS` threaded to `alphakey-api` (defaults
+empty — nginx fronts everything). `ALPHAKEY_URL`/`ALPHAKEY_SERVICE_TOKEN`/`SECRETS_SOURCE`
+also threaded to all consumers.
 
-### 4.7 Redis password consistency — **P2 (doc/wiring check)**
-**Why:** alphaFrame added `REDIS_PASSWORD` (`requirepass`, AOF persistence) and rewrote service
-Redis URLs to `redis://:${REDIS_PASSWORD}@redis:6379/...`. The per-service docs for
-[[services/alphaKey/Config]], [[services/alphaGen/Config]], and [[services/alphaTrade/Config]]
-still show password-less Redis URLs.
-**Build:** Verify every service's runtime Redis URL includes the password and update the three
-service Config docs to match.
-**Acceptance:** No service connects to Redis without auth; docs are consistent.
+### 4.7 Redis password consistency — ✅ Done
+All service Redis URLs confirmed authenticated (`redis://:${REDIS_PASSWORD}@redis:6379/N`).
+alphakey-api uses DB 2 to avoid collision with Celery broker/results (DBs 0/1).
+[[services/alphaKey/Config]], [[services/alphaGen/Config]], [[services/alphaTrade/Config]] all
+updated to show authenticated URL format.
 
 ---
 
@@ -410,10 +383,10 @@ session-management features now in alphaKey.
 
 | Priority | Items |
 |---|---|
-| **P0** | 1.1 password-reset UI · 1.2 MFA UI + step-up · 1.3 sessions UI · 4.1 SMTP env · 4.3 alphaGen Beat container |
-| **P1** | 1.4 lockout UX · 2.1 model.ready consumer · 2.2 alphaTrade iss/aud · 2.3 + 4.2 DB_SECRETS_KEY · 3.1 alphaGen iss/aud |
-| **P2** | 1.5 admin enable/disable · 1.6 consensus gates UI · 1.7 bulk delete · 3.2 MinIO creds docs · 4.4 drift dashboard/alert · 4.5 KEK rotation env · 4.6 jwt/CORS passthrough · 4.7 Redis password · 5 claim contract |
-| **✅ Closed** | 6 alphaTest/alphaPerf scenarios (docs updated 2026-06-14) |
+| **P0** | 1.1 password-reset UI · 1.2 MFA UI + step-up · 1.3 sessions UI |
+| **P1** | 1.4 lockout UX · 2.1 model.ready consumer · 2.2 alphaTrade iss/aud (code) · 2.3 DB_SECRETS_KEY (verify migration-safe fallback) · 3.1 alphaGen iss/aud (code) |
+| **P2** | 1.5 admin enable/disable · 1.6 consensus gates UI · 1.7 bulk delete · 3.2 MinIO creds docs · 5 JWT claim contract |
+| **✅ Closed** | §4 all alphaFrame wiring (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) |
 
 ---
 
