@@ -25,10 +25,17 @@ Proxies to [[services/alphaKey/alphaKey|alphaKey]] `http://alphakey-api:8000`
 
 | Method | Path | Proxies to | Special handling |
 |---|---|---|---|
-| `POST` | `/api/auth/login` | `POST /auth/login` | Extract refresh_token → httpOnly cookie; fetch /auth/me; return `{access_token, user}`. `/login?reason=session_expired` shows amber expiry banner. |
+| `POST` | `/api/auth/login` | `POST /auth/login` | Extract refresh_token → httpOnly cookie; fetch /auth/me; return `{access_token, user}`. Forwards `X-TOTP-Required: true` header when alphaKey signals step-up needed. Accepts optional `totp_code` in body. |
 | `POST` | `/api/auth/logout` | `POST /auth/logout` | Clear `alphakey_session` cookie; body includes `{jti, exp, refresh_token}` |
 | `POST` | `/api/auth/refresh` | `POST /auth/refresh` | Read httpOnly cookie; inject into body; return new `access_token`. On upstream 401/403: clear both cookies so middleware redirects to `/login`. |
 | `POST` | `/api/auth/register` | `POST /auth/register` | Transparent proxy |
+| `POST` | `/api/auth/forgot-password` | `POST /auth/forgot-password` | Transparent proxy; handles 501 (SMTP not configured) |
+| `POST` | `/api/auth/reset-password` | `POST /auth/reset-password` | Transparent proxy; on success client redirects to `/login` (no auto-login — alphaKey revokes all sessions) |
+| `GET` | `/api/auth/me/sessions` | `GET /auth/me/sessions` | Bearer-forwarded; returns active session list |
+| `DELETE` | `/api/auth/me/sessions/{id}` | `DELETE /auth/me/sessions/{id}` | Bearer-forwarded; revoke session. Revoking current session → client redirects to `/login?reason=session_expired` |
+| `POST` | `/api/auth/me/totp/setup` | `POST /auth/me/totp/setup` | Bearer-forwarded; returns `{qr_uri, secret}` |
+| `POST` | `/api/auth/me/totp/verify` | `POST /auth/me/totp/verify` | Bearer-forwarded; activates TOTP |
+| `POST` | `/api/auth/me/totp/disable` | `POST /auth/me/totp/disable` | Bearer-forwarded; requires current TOTP code |
 | ALL | `/api/auth/[...path]` | `/auth/[...path]` | Transparent proxy (preserves Authorization header, merges refresh_token) |
 
 ---

@@ -25,9 +25,11 @@ alphaLink is the unified frontend for the entire alphaPlatform. It provides:
 | Route | Purpose |
 |---|---|
 | `/` | Redirects to `/trade/dashboard` |
-| `/login` | Email/password login → POST `/api/auth/login` |
+| `/login` | Email/password login → POST `/api/auth/login` — includes TOTP step-up when MFA enrolled |
 | `/signup` | Registration → POST `/api/auth/register` |
-| `/account` | User account + VaultSection (encrypted secrets UI) |
+| `/forgot-password` | Password reset request — public route |
+| `/reset-password` | Password reset confirmation (reads `?token=`) — public route |
+| `/account` | User account: VaultSection, MfaSection (TOTP enrollment/disable), SessionsSection (active sessions + revoke) |
 | `/trade/dashboard` | Main trading dashboard — positions, orders, equity curve |
 | `/trade/models/published` | Published models from alphaGen |
 | `/trade/models/registry` | MLflow model registry view |
@@ -174,7 +176,7 @@ The `/login` page renders an amber banner when `reason=session_expired` is prese
 
 ### Retry-on-401
 
-Both `tradeFetch` (`src/lib/trade-fetch.ts`) and `authFetch` (inline in `VaultSection`) implement retry-on-401:
+Both `tradeFetch` (`src/lib/trade-fetch.ts`) and `authFetch` (`src/lib/auth-fetch.ts`) implement retry-on-401:
 
 1. Make request with current `accessToken`
 2. On 401: call `refreshAccessToken()`
@@ -194,7 +196,7 @@ This covers the gap where a token expires between page load and the user trigger
 | **Config builder** | Multi-step form (Data → Model → Train) using SessionConfig store |
 | **Trade UI** | `SSEProvider` (manages live events from alphaTrade `/stream`), position/order/signal tables |
 | **Charts** | Backtest equity curve (Recharts), candlestick (lightweight-charts) |
-| **Account** | `VaultSection` — encrypted credential storage UI (T212, Polygon, SMTP, Slack). MinIO credentials are infra-provisioned and not user-editable. |
+| **Account** | `VaultSection` — encrypted credential storage UI (T212, Polygon, SMTP, Slack). `MfaSection` — TOTP enrollment/disable (setup → QR → verify). `SessionsSection` — active session list with per-session revoke. MinIO credentials are infra-provisioned and not user-editable. |
 | **Models** | Registry browser, model detail, promote/demote actions |
 | **UI primitives** | shadcn/ui — Card, Input, Button, Dialog, Tabs, Select, Toast (Sonner) |
 
@@ -204,7 +206,7 @@ This covers the gap where a token expires between page load and the user trigger
 
 - **BFF proxies everything**: No direct browser-to-backend calls. Allows service URL changes without frontend deploys.
 - **Access token in-memory only**: Prevents XSS token theft. Refresh token in httpOnly cookie prevents JS access.
-- **Middleware JWT guard**: All routes except `/login`, `/signup`, `/api/auth/*` require `alphakey_session` cookie containing a valid, non-expired access token. Middleware decodes the JWT `exp` claim — a forged or absent cookie is rejected before the request reaches any BFF route.
+- **Middleware JWT guard**: All routes except `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/api/auth/*` require `alphakey_session` cookie containing a valid, non-expired access token. Middleware decodes the JWT `exp` claim — a forged or absent cookie is rejected before the request reaches any BFF route.
 - **BFF token forwarding**: `src/lib/server-auth.ts` (`getSessionToken`) reads `alphakey_session` server-side; BFF routes use `bearerHeader(token)` to forward `Authorization: Bearer` to alphaGen and alphaKey. Client requests to `/api/jobs/*` and `/api/runs` no longer need to supply the header themselves.
 - **Proactive JWT refresh**: Timer scheduled at `exp - 60s` silently refreshes the access token before it expires. Self-rescheduling via `[accessToken]` useEffect dependency. Avoids mid-session 401s for active users.
 - **Retry-on-401**: All authenticated client-side fetches (`tradeFetch`, vault `authFetch`) attempt one silent token refresh on 401 before redirecting. Covers the window between page load and user action where the token may have expired.
