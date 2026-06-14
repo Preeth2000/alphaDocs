@@ -35,6 +35,7 @@ alphaGen trains multi-class (BUY/SELL/HOLD) classifiers on OHLCV price data, val
 | `export` | `att/export/` | ONNX export, parity verification, manifest writer |
 | `publish` | `att/publish/` | MinIO artifact upload (model.onnx, manifest.json, backtest.json) |
 | `sweep` | `att/sweep/` | Optuna hyperparameter sweep (optuna_runner) |
+| `drift` | `att/drift/` | PSI + KS drift metrics; reference distribution read/write |
 | `security` | `att/security/` | alphaKey JWT offline verification (ES256 JWKS + Redis denylist) |
 | `secrets` | `att/secrets/` | alphaKey vault client — fetch per-user secrets |
 | `telemetry` | `att/telemetry.py` | OpenTelemetry setup (OTLP exporter) |
@@ -151,3 +152,5 @@ stateDiagram-v2
 - **Celery task_acks_late=True**: Task message is not acked until the task completes. Combined with `task_reject_on_worker_lost=True`, a worker crash re-queues the task. `worker_max_tasks_per_child=1` restarts the worker process after each training run to reclaim PyTorch/CUDA memory.
 - **mark_stale_runs scope**: On worker startup, `mark_stale_runs` calls `celery_app.control.inspect(timeout=2).active()` to discover task IDs currently active across all workers. Only runs whose `celery_task_id` is NOT in that set are marked stale — prevents a restarting worker from killing another worker's in-progress run.
 - **SSE streams use redis.asyncio + heartbeats**: Both `/runs/{id}/log` and `/runs/events` use async Redis and emit `: heartbeat\n\n` every 15 s to keep proxy connections alive. `_stream_redis` subscribes *before* re-reading run status to close the race where a run completes between the initial DB read and the subscribe call.
+- **Drift monitoring via Celery Beat**: `att.check_drift_and_retrain` runs on a configurable schedule (default daily). Computes PSI and KS for each active model's features against a reference distribution stored in `drift_reference.json` at training time. Publishes `alphagen_drift_psi` and `alphagen_drift_ks` OTel gauges with `{model, feature}` attributes. Triggers `train_and_export` automatically when `max(PSI) > DRIFT_PSI_THRESHOLD` or `max(KS) > DRIFT_KS_THRESHOLD`. Start Beat with: `celery -A att.api.worker beat --loglevel=info`.
+- **drift_reference.json**: Written alongside `manifest.json` during training (per-feature histogram bin edges and counts from last-fold normalized windows). Uploaded to MinIO on publish. Used exclusively by the drift monitor — not part of the inference contract.

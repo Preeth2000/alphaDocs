@@ -39,6 +39,12 @@ Source: `alphaGen/.env.example`
 | `SECRETS_SOURCE` | `env` | ⬜ | `env` (vars) or `alphakey` (vault-fetched) |
 | `RETRAIN_MAX_ATTEMPTS` | `3` | ⬜ | Max automatic retrains before escalating to `flag_human` |
 | `RETRAIN_RETRY_DELAY_SECONDS` | `300` | ⬜ | Countdown (seconds) before the rescheduled Celery retrain task is dispatched |
+| `DRIFT_ENABLED` | `true` | ⬜ | Enable/disable drift monitoring Beat task |
+| `DRIFT_PSI_THRESHOLD` | `0.20` | ⬜ | PSI score above which a retrain is triggered (PSI > 0.20 = significant drift) |
+| `DRIFT_KS_THRESHOLD` | `0.10` | ⬜ | KS statistic above which a retrain is triggered |
+| `DRIFT_CHECK_INTERVAL_SECONDS` | `86400` | ⬜ | Celery Beat drift check period (default: daily) |
+| `DRIFT_LOOKBACK_BARS` | `252` | ⬜ | Number of recent live bars compared against reference distribution |
+| `DRIFT_MIN_LIVE_BARS` | `50` | ⬜ | Minimum live bars required to run drift check (skip otherwise) |
 
 ---
 
