@@ -25,11 +25,12 @@ alphaLink is the unified frontend for the entire alphaPlatform. It provides:
 | Route | Purpose |
 |---|---|
 | `/` | Redirects to `/trade/dashboard` |
-| `/login` | Email/password login → POST `/api/auth/login` — includes TOTP step-up when MFA enrolled |
+| `/login` | Email/password login → POST `/api/auth/login` — includes TOTP step-up when MFA enrolled; 429 responses show lockout message |
 | `/signup` | Registration → POST `/api/auth/register` |
 | `/forgot-password` | Password reset request — public route |
 | `/reset-password` | Password reset confirmation (reads `?token=`) — public route |
 | `/account` | User account: VaultSection, MfaSection (TOTP enrollment/disable), SessionsSection (active sessions + revoke) |
+| `/trade/admin/users` | Admin-only user management — enable/disable/force-logout/role-change via alphaKey admin routes |
 | `/trade/dashboard` | Main trading dashboard — positions, orders, equity curve |
 | `/trade/models/published` | Published models from alphaGen |
 | `/trade/models/registry` | MLflow model registry view |
@@ -197,6 +198,8 @@ This covers the gap where a token expires between page load and the user trigger
 | **Trade UI** | `SSEProvider` (manages live events from alphaTrade `/stream`), position/order/signal tables |
 | **Charts** | Backtest equity curve (Recharts), candlestick (lightweight-charts) |
 | **Account** | `VaultSection` — encrypted credential storage UI (T212, Polygon, SMTP, Slack). `MfaSection` — TOTP enrollment/disable (setup → QR → verify). `SessionsSection` — active session list with per-session revoke. MinIO credentials are infra-provisioned and not user-editable. |
+| **Admin** | `/trade/admin/users` — admin-gated user table; enable/disable (bumps token_version → immediate platform-wide logout), force-logout, role change. |
+| **Models** | Registry page: multi-select checkboxes + bulk delete bar. Override drawer: consensus gate inputs (`consensus_min_confidence`, `consensus_min_margin`) with HOLD coercion docs. |
 | **Models** | Registry browser, model detail, promote/demote actions |
 | **UI primitives** | shadcn/ui — Card, Input, Button, Dialog, Tabs, Select, Toast (Sonner) |
 

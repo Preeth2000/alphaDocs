@@ -36,6 +36,11 @@ Proxies to [[services/alphaKey/alphaKey|alphaKey]] `http://alphakey-api:8000`
 | `POST` | `/api/auth/me/totp/setup` | `POST /auth/me/totp/setup` | Bearer-forwarded; returns `{qr_uri, secret}` |
 | `POST` | `/api/auth/me/totp/verify` | `POST /auth/me/totp/verify` | Bearer-forwarded; activates TOTP |
 | `POST` | `/api/auth/me/totp/disable` | `POST /auth/me/totp/disable` | Bearer-forwarded; requires current TOTP code |
+| `GET` | `/api/auth/admin/users` | `GET /auth/admin/users` | Bearer-forwarded; admin only |
+| `PATCH` | `/api/auth/admin/users/{uid}/enable` | `PATCH /auth/admin/users/{uid}/enable` | Bearer-forwarded; re-enables user |
+| `PATCH` | `/api/auth/admin/users/{uid}/disable` | `PATCH /auth/admin/users/{uid}/disable` | Bearer-forwarded; bumps token_version + revokes all refresh tokens → immediate platform-wide logout |
+| `POST` | `/api/auth/admin/users/{uid}/kill` | `POST /auth/admin/users/{uid}/kill` | Bearer-forwarded; force-terminates all sessions |
+| `PATCH` | `/api/auth/admin/users/{uid}` | `PATCH /auth/admin/users/{uid}` | Bearer-forwarded; update user fields (e.g. `{role}`) |
 | ALL | `/api/auth/[...path]` | `/auth/[...path]` | Transparent proxy (preserves Authorization header, merges refresh_token) |
 
 ---
@@ -46,6 +51,7 @@ Proxies to [[services/alphaGen/alphaGen|alphaGen]] `ALPHAGEN_API_URL`
 
 | Method | Path | Proxies to | Notes |
 |---|---|---|---|
+| `DELETE` | `/api/trade/models` | `DELETE /models` | Bulk delete with `{run_names: [...]}` body; returns per-model `{deleted, error}` results |
 | `POST` | `/api/jobs` | `POST /runs` | Normalises run → Job type; adds `visibility` |
 | `GET` | `/api/jobs` | `GET /runs` | Normalises list |
 | `GET` | `/api/jobs/[id]` | `GET /runs/{id}` | Normalises run |
