@@ -34,6 +34,11 @@ tags:
 | A9 | **[INT] Signing-key rotation** | After `rotate-keys`, old-key tokens verify until `retire_after`, then fail; JWKS stops publishing retired keys without manual intervention; new logins use the new kid. | alphaKey-t8l |
 | A10 | **[E2E] Brute-force lockout** | N failed logins → throttled/locked with audit events (once rate limiting lands). | alphaKey-xhx |
 | A11 | **[CON] Unauthenticated logout cannot denylist arbitrary jti** | Logout derives jti/exp from the presented token, not the body; junk body values have no effect. | alphaKey-2v2 |
+| A12 | **[E2E] MFA / TOTP enrollment + login step-up** | `POST /auth/me/totp/setup` returns a provisioning URI and does NOT yet enable MFA; `POST /auth/me/totp/verify` with the first valid code activates it (`totp_enabled=true`). Once enabled, `POST /auth/login` without `totp_code` returns `401` + header `X-TOTP-Required: true`; the same login WITH a valid `totp_code` succeeds. A wrong/expired code is rejected. | alphaKey MFA feature ([[platform/Cross-Service-Backlog\|backlog]] §1.2) |
+| A13 | **[INT] MFA disable requires current code** | `POST /auth/me/totp/disable` succeeds only when a valid current TOTP code is supplied; absent/invalid code → rejected, MFA stays enabled. After disable, `totp_enabled=false` and login no longer prompts for a code. | alphaKey MFA feature ([[platform/Cross-Service-Backlog\|backlog]] §1.2) |
+| A14 | **[E2E] Password reset happy path** | `POST /auth/forgot-password` for a real account writes a `password_reset_token` row and triggers SMTP outbound; the emailed token drives `POST /auth/reset-password` to set a new password; the user can then log in with the new password and NOT the old one. | alphaKey password-reset feature ([[platform/Cross-Service-Backlog\|backlog]] §1.1) |
+| A15 | **[CON] Password reset token security** | Reset token is single-use (second use rejected) and TTL-bound (`PASSWORD_RESET_TTL`, default 1h — expired token rejected). Successful reset **revokes all sessions** (existing access+refresh tokens dead within ~1s). `forgot-password` for an unknown email is indistinguishable from a real one (always `204`, no timing/response leak). With `SMTP_HOST` unset the endpoint returns `501`, never a silent success. | alphaKey password-reset feature ([[platform/Cross-Service-Backlog\|backlog]] §1.1) |
+| A16 | **[INT] Active session list + revoke** | `GET /auth/me/sessions` lists the caller's active refresh-token sessions; `DELETE /auth/me/sessions/{id}` revokes one so its access token is rejected platform-wide (alphaKey/alphaGen/alphaTrade) within ~1s. Revoking the session in current use forces a clean re-auth (BFF surfaces `/login?reason=session_expired`), never a 500. | alphaKey session-mgmt feature ([[platform/Cross-Service-Backlog\|backlog]] §1.3) |
 
 ## 2. Vault & Secrets (alphaKey + consumers)
 
@@ -124,12 +129,15 @@ Highest-value suite — every scenario simulates the broker (mock T212 HTTP serv
 - Frozen OHLCV parquet fixtures (1d + 5m, one ticker each) committed to alphaTest.
 - One golden manifest + ONNX model per arch (mlp, lstm) with known logits for fixed input.
 - Mock T212 server (record/replay of order, fill, position, 429 flows) — single source of truth for L-suite.
-- Schema snapshots: manifest.json, model.ready event, alphaKey token claims, BFF auth responses (for CON tests).
+- Schema snapshots: manifest.json, model.ready event, alphaKey token claims (incl. `iss`/`aud`), BFF auth responses (for CON tests).
+- TOTP test vectors: a fixed base32 secret + clock-pinned codes (RFC 6238) so MFA enroll/verify/step-up (A12–A13) are deterministic without wall-clock flakiness.
+- Mock SMTP sink (e.g. mailpit/smtp-stub) to capture password-reset mail and extract the token for A14–A15 without a real relay.
 
 ## Priority Order for Implementation
 
 1. **L1, L2, L12, L16** — money-losing bugs (all currently failing).
 2. **A1, V2** — session + key rotation (currently failing).
-3. **T1–T3, T7** — silent model-quality corruption.
-4. **U1, V3, I3** — exposure scenarios.
-5. Remainder.
+3. **A12, A14, A16** — MFA, password-reset, and session-revoke guards for the new alphaKey auth flows (P0 features in [[platform/Cross-Service-Backlog|backlog]] §1; tests land alongside the alphaLink UI work).
+4. **T1–T3, T7** — silent model-quality corruption.
+5. **U1, V3, I3** — exposure scenarios.
+6. Remainder (incl. A13, A15).

@@ -53,17 +53,19 @@ stateDiagram-v2
 
 ```json
 {
+  "iss": "alphakey",
+  "aud": "alphakey",
   "sub": "user-uuid",
   "role": "developer",
   "jti": "random-uuid",
   "tv": 3,               // token_version — must match DB; bump = instant invalidation
   "iat": 1717689600,
   "exp": 1717690200,
-  "kid": "key-id"        // signing key ID for JWKS lookup
+  "kid": "key-id"        // signing key ID for JWKS lookup (header, not payload)
 }
 ```
 
-**Verification path (offline):** JWKS → find key by `kid` → verify signature → check `exp` → check Redis denylist (by JTI) → check `tv` matches `user.token_version`
+**Verification path (offline):** JWKS → find key by `kid` (JWT header) → verify signature → check `exp` / `iss` / `aud` → check Redis denylist (by JTI) → check `tv` matches `user.token_version`
 
 ### Refresh Token (opaque, 14 days)
 
@@ -111,5 +113,5 @@ First registered user automatically gets `developer` role; all subsequent users 
 ## Audit Logging
 
 Two append-only audit tables:
-- **`audit_log`** — Auth events: login, login_fail, refresh, logout, logout_all, register, role_change, kill_switch, password_change. Stores actor_user_id, target_user_id, ip, user_agent, detail JSON.
+- **`audit_log`** — Auth events: login, login_fail, refresh, logout, logout_all, register, role_change, kill_switch, password_change, disable_user, enable_user. Stores actor_user_id, target_user_id, ip, user_agent, detail JSON.
 - **`credential_access_audit`** — Every vault read/write/delete. Stores accessor (user_id or `svc:service_name`), user_id, provider, account, name, action, ip.

@@ -21,7 +21,7 @@ tags:
 
 ---
 
-## Database Tables (6)
+## Database Tables (8)
 
 Database: `alphakey`  
 Managed by: Alembic (`alphakey upgrade head` on startup)  
@@ -39,6 +39,8 @@ Migrations: `alphakey/store/migrations/versions/`
 | `minio_account` | String nullable | MinIO namespace account |
 | `is_active` | Bool (default true) | Login allowed? |
 | `token_version` | Int (default 0) | Bumped on logout-all/password-change → offline invalidation |
+| `totp_secret_encrypted` | Text nullable | Fernet-encrypted TOTP base32 secret; null if MFA never set up |
+| `totp_enabled` | Bool (default false) | Whether TOTP MFA is active |
 | `created_at`, `updated_at` | DateTime UTC | Timestamps |
 
 ### `refresh_token`
@@ -75,9 +77,10 @@ Migrations: `alphakey/store/migrations/versions/`
 | `provider` | String | `t212` \| `polygon` \| `smtp` \| `slack` \| `minio` \| `alphatrade` |
 | `account` | String | `demo` \| `invest` \| `isa` \| `default` |
 | `name` | String | `api_key` \| `secret_key` \| `webhook_url` \| `smtp_password` \| … |
-| `ciphertext` | String | Fernet-encrypted secret value |
-| `dek_wrapped` | String | Base64-encoded DEK, wrapped by KEK |
-| `key_version` | String | KEK version that wrapped DEK |
+| `ciphertext` | String | Fernet token of encrypted secret |
+| `dek_wrapped` | String | Fernet token of DEK, wrapped by KEK |
+| `key_version` | Int | KEK version that wrapped DEK |
+| `secret_last4` | String | Last 4 plaintext chars; stored at write time to avoid decryption on list |
 | `created_at`, `updated_at` | DateTime | |
 
 Unique constraint: `(user_id, provider, account, name)`
@@ -90,9 +93,20 @@ Unique constraint: `(user_id, provider, account, name)`
 | `ts` | DateTime (indexed) | Event time |
 | `actor_user_id` | String nullable | Who performed action |
 | `target_user_id` | String nullable | Who was affected |
-| `event` | String | login \| login_fail \| refresh \| logout \| logout_all \| register \| role_change \| kill_switch \| password_change |
+| `event` | String | login \| login_fail \| refresh \| logout \| logout_all \| logout_all \| register \| role_change \| kill_switch \| password_change \| password_reset_requested \| password_reset \| totp_enabled \| totp_disabled \| session_revoke |
 | `ip`, `user_agent` | String | Request context |
 | `detail` | JSON string | Additional context |
+
+### `password_reset_token`
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | String (indexed) | Owner |
+| `token_hash` | String (indexed) | SHA-256 of raw URL-safe token |
+| `expires_at` | DateTime UTC | Expiry (default 1 hour from creation) |
+| `used_at` | DateTime nullable | Set on first use (single-use) |
+| `created_at` | DateTime UTC | |
 
 ### `credential_access_audit` (append-only)
 
@@ -131,6 +145,10 @@ Unique constraint: `(user_id, provider, account, name)`
 |---|---|
 | `0001_initial_identity` | Create `user`, `refresh_token`, `signing_key`, `audit_log` |
 | `0002_credential_vault` | Create `credential`, `credential_access_audit` |
+| `0003_refresh_token_hash_index` | Index `refresh_token.token_hash` for O(1) lookup |
+| `0004_credential_last4` | Add `credential.secret_last4` column |
+| `0005_password_reset_token` | Create `password_reset_token` table |
+| `0006_user_totp` | Add `user.totp_secret_encrypted`, `user.totp_enabled` columns |
 
 ---
 
@@ -138,4 +156,7 @@ Unique constraint: `(user_id, provider, account, name)`
 
 | Key pattern | Purpose | TTL |
 |---|---|---|
-| `denylist:{jti}` | JTI denylist entry (instant revocation) | Token `exp - now` |
+| `alphakey:denylist:{jti}` | JTI denylist entry (instant revocation) | Token `exp - now` |
+| `alphakey:rl:ip:{ip}` | Login rate limit counter per IP | 300s (5 min window) |
+| `alphakey:rl:acct:{sha256}` | Login failure counter per account | 900s (15 min window) |
+| `alphakey:lockout:{sha256}` | Account lockout flag | 900s (15 min lockout) |

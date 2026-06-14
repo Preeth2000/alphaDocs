@@ -27,6 +27,7 @@ tags:
 | Event-loop blocking (alphaTrade) | max single stall < 250ms | OCO polls / sync calls must not freeze ticks |
 | alphaKey token verify (downstream services, cached JWKS) | p99 < 10ms local | runs on every API call |
 | alphaKey login (argon2) | p95 < 500ms @ 20 rps | argon2 cost vs UX |
+| alphaKey login with MFA (argon2 + TOTP verify) | p95 < 520ms @ 20 rps | TOTP HMAC check is cheap; budget ≈ login + <20ms |
 | BFF proxy overhead (alphaLink) | p95 < 30ms added | thin proxy |
 | Training run (golden 1d config, CPU) | within ±20% of baseline | regression fence, not absolute |
 | SSE fan-out | 200 concurrent streams, < 5% missed events, stable RSS | threadpool exhaustion risk found in review |
@@ -51,8 +52,14 @@ tags:
 
 ### P2 — Auth path (alphaKey)
 1. **Steady-state verify**: 500 rps mixed GET across alphaGen/alphaTrade with JWT auth on → JWKS caching effectiveness, denylist Redis round-trip (per-call connection bead), DB token_version lookup cost.
-2. **Login storm**: 20 rps logins (argon2 CPU); find the knee; verify event loop not starved (sync-in-async bead).
+2. **Login storm**: 20 rps logins (argon2 CPU); find the knee; verify event loop not starved (sync-in-async bead). Run a parallel variant with MFA-enabled accounts (login carries `totp_code`) to confirm the TOTP HMAC verify adds negligible CPU vs argon2.
 3. **Vault read fan-out**: alphaTrade+alphaGen secrets refresh under tick load; N+1 audit-commit cost.
+4. **TOTP verify micro-bench**: in-process `pytest-benchmark` on the TOTP code-verification path (pyotp/HMAC) — establishes that MFA step-up is not a login hot-spot. New driver: alphaKey MFA feature ([[platform/Cross-Service-Backlog|backlog]] §1.2).
+
+> [!note] Password reset is not a perf target
+> `forgot-password`/`reset-password` are low-rps, SMTP-bound flows (outbound mail dominates). No load
+> budget is set; correctness/security is covered by alphaTest A14–A15. Only guard that the SMTP send
+> runs off the request path (or is bounded) so a slow relay cannot stall the event loop.
 
 ### P3 — Training throughput (alphaGen)
 1. **Feature pipeline micro-bench**: 1M-row intraday frame through indicators → windows. *Known:* `make_windows` np.stack copy (memory bead), triple-barrier O(n·h) loop (bead) — benchmark before/after fixes.

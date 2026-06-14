@@ -39,6 +39,7 @@ alphaFrame eliminates per-project infrastructure duplication. Previously alphaGe
 | `alphakey-api` | `../alphaKey` | Auth / vault service |
 | `alphagen-api` | `../alphaGen` | Training API (runs Alembic upgrade at startup) |
 | `alphagen-worker` | `../alphaGen` | Celery worker (concurrency=1) — capped at 2 CPU / 4G RAM |
+| `alphagen-beat` | `../alphaGen` | Celery Beat scheduler — runs `att.check_drift_and_retrain` daily; capped at 0.5 CPU / 512M |
 | `alphagen-flower` | `mher/flower` | Celery monitoring UI |
 | `alphatrade` | `../alphaTrade` | Trading executor — reserved 0.5 CPU / 512M, max 2 CPU / 2G |
 | `alphalink` | `../alphaLink` | Next.js frontend — internal only, nginx is sole ingress |
