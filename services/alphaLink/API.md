@@ -92,9 +92,9 @@ Local filesystem — no backend call.
 |---|---|---|
 | `GET` | `/api/health` | BFF liveness check — returns `{ok: true}` |
 | `GET` | `/api/instruments?q=` | Ticker symbol search (via `lib/instruments.ts`) |
-| `GET` | `/api/polygon-key` | Check if POLYGON_API_KEY set in alphaGen .env |
-| `POST` | `/api/polygon-key` | Write POLYGON_API_KEY to alphaGen .env file |
-| `GET` | `/api/fs/browse?path=` | Directory listing (safe traversal, rejects parent pointers) |
+| `GET` | `/api/polygon-key` | Read `polygon/default/api_key` from alphaKey vault; returns `{status:'valid', hint:'****xxxx'}` or `{status:'missing'}` |
+| `POST` | `/api/polygon-key` | Write `{value}` to alphaKey vault `polygon/default/api_key` via `PUT /auth/vault/polygon/default/api_key` |
+| `GET` | `/api/fs/browse?path=` | Directory listing; requires auth; restricted to `$HOME` (or `FS_BROWSE_ROOT` env var) |
 | `GET` | `/api/runs` | Legacy run summary endpoint |
 
 ---
@@ -105,6 +105,9 @@ Local filesystem — no backend call.
 |---|---|---|---|
 | `GET /api/jobs/[id]/logs` | alphaGen `GET /runs/{id}/log` | `log`, `status`, closes on `done: true` | Training page — live log viewer |
 | `GET /api/trade/events` | alphaTrade `GET /stream` | All alphaTrade SSE events | Dashboard — live positions/orders/fills |
+| `GET /api/events/model-ready` | alphaGen `GET /runs/events` | Model-ready notifications | Trade models page |
+
+All SSE proxies wire an `AbortController` to `req.signal`: when the browser disconnects the upstream fetch is cancelled, preventing orphaned server-side connections.
 
 ---
 
@@ -112,12 +115,11 @@ Local filesystem — no backend call.
 
 | Target | How | When |
 |---|---|---|
-| [[services/alphaKey/alphaKey\|alphaKey]] `:8000` | HTTP via fetch | All `/api/auth/*` calls |
-| [[services/alphaGen/alphaGen\|alphaGen]] `ALPHAGEN_API_URL` | HTTP via fetch | All `/api/jobs/*` + `/api/config/*` |
+| [[services/alphaKey/alphaKey\|alphaKey]] `:8000` | HTTP via fetch | All `/api/auth/*` calls; `/api/polygon-key` vault read/write |
+| [[services/alphaGen/alphaGen\|alphaGen]] `ALPHAGEN_API_URL` | HTTP via fetch | All `/api/jobs/*` + `/api/config/*` (with `Authorization: Bearer` forwarded) |
 | [[services/alphaTrade/alphaTrade\|alphaTrade]] `ALPHATRADE_API_URL` | HTTP via fetch | All `/api/trade/*` |
 | `att` binary (`ATT_BIN`) | Child process | `POST /api/jobs/validate` |
 | Local filesystem `~/.alphalink/` | `fs` module | Templates read/write, artifacts |
-| alphaGen `.env` file (`ALPHAGEN_ENV_FILE`) | `fs` module | Polygon key read/write |
 
 ---
 

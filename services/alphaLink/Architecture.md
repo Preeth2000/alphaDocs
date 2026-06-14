@@ -64,8 +64,8 @@ Browser → /api/trade/* → alphaTrade
 Browser → /api/config/* → alphaGen
 Browser → /api/templates/* → ~/.alphalink/templates/ (filesystem)
 Browser → /api/instruments?q= → local search
-Browser → /api/polygon-key → alphaGen .env file (read/write)
-Browser → /api/fs/browse → local filesystem (safe traversal)
+Browser → /api/polygon-key → alphaKey vault (polygon/default/api_key)
+Browser → /api/fs/browse → local filesystem (restricted to $HOME / FS_BROWSE_ROOT)
 ```
 
 **Benefits:**
@@ -140,21 +140,22 @@ sequenceDiagram
     AK-->>BFF_AUTH: {access_token, refresh_token, ...}
     BFF_AUTH->>AK: GET /auth/me (with access_token)
     AK-->>BFF_AUTH: {id, email, role, minio_user, ...}
-    BFF_AUTH-->>Browser: Set-Cookie: alphakey_session=refresh_token (httpOnly)
+    BFF_AUTH-->>Browser: Set-Cookie: alphakey_session=<access_token> (httpOnly)
+    BFF_AUTH-->>Browser: Set-Cookie: alphakey_refresh=<refresh_token> (httpOnly)
     BFF_AUTH-->>Browser: JSON {access_token, user}
     Browser->>Browser: Zustand.setAuth(user, access_token)
 
-    Note over Browser: Page refresh — token lost
+    Note over Browser: Page refresh — in-memory token lost
     Browser->>BFF_AUTH: POST /api/auth/refresh
-    BFF_AUTH->>BFF_AUTH: Read httpOnly cookie
+    BFF_AUTH->>BFF_AUTH: Read alphakey_refresh httpOnly cookie
     BFF_AUTH->>AK: POST /auth/refresh {refresh_token}
     AK-->>BFF_AUTH: {access_token, (new refresh_token)}
-    BFF_AUTH-->>Browser: Set-Cookie: update cookie
+    BFF_AUTH-->>Browser: Set-Cookie: update alphakey_session + alphakey_refresh
     BFF_AUTH-->>Browser: JSON {access_token}
 
     Note over MW: All protected routes
-    MW->>MW: Check alphakey_session cookie
-    alt Missing cookie
+    MW->>MW: Decode JWT exp from alphakey_session cookie
+    alt Missing or expired token
         MW-->>Browser: Redirect to /login
     end
 ```
@@ -202,7 +203,8 @@ This covers the gap where a token expires between page load and the user trigger
 
 - **BFF proxies everything**: No direct browser-to-backend calls. Allows service URL changes without frontend deploys.
 - **Access token in-memory only**: Prevents XSS token theft. Refresh token in httpOnly cookie prevents JS access.
-- **Middleware cookie guard**: All routes except `/login`, `/signup`, `/api/auth/*` require `alphakey_session` cookie.
+- **Middleware JWT guard**: All routes except `/login`, `/signup`, `/api/auth/*` require `alphakey_session` cookie containing a valid, non-expired access token. Middleware decodes the JWT `exp` claim — a forged or absent cookie is rejected before the request reaches any BFF route.
+- **BFF token forwarding**: `src/lib/server-auth.ts` (`getSessionToken`) reads `alphakey_session` server-side; BFF routes use `bearerHeader(token)` to forward `Authorization: Bearer` to alphaGen and alphaKey. Client requests to `/api/jobs/*` and `/api/runs` no longer need to supply the header themselves.
 - **Proactive JWT refresh**: Timer scheduled at `exp - 60s` silently refreshes the access token before it expires. Self-rescheduling via `[accessToken]` useEffect dependency. Avoids mid-session 401s for active users.
 - **Retry-on-401**: All authenticated client-side fetches (`tradeFetch`, vault `authFetch`) attempt one silent token refresh on 401 before redirecting. Covers the window between page load and user action where the token may have expired.
 - **Session-expired redirect**: On unrecoverable 401, redirect to `/login?next=<path>&reason=session_expired`. Login page shows an amber "session expired" banner when this param is present.
