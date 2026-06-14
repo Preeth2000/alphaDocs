@@ -4,7 +4,7 @@ tags:
   - platform
   - architecture
   - decisions
-last-reviewed: 2026-06-06
+last-reviewed: 2026-06-14
 ---
 
 # Key Architecture Decisions
@@ -214,6 +214,8 @@ Architecture Decision Records (ADRs) for the major design choices across project
 - `norm_stats` enables exact feature normalization replication at inference time
 - Version-stable: manifest is immutable per published version
 
-**Implementation invariant:** `feature_names` is written from `FeaturePipeline._fitted_columns` — the actual column list of the fitted DataFrame after `fit_transform` — not reconstructed from config. This guarantees fundamentals columns (e.g. `reported_eps`, `sector_code`) and conditional OHLCV extras (VWAP, Transactions) are included when present. `feature_names` raises `RuntimeError` if accessed before `fit_transform`. Any caller writing the manifest must call `fit_transform` first.
+**Implementation invariants:**
+- `feature_names` is written from `FeaturePipeline._fitted_columns` — the actual column list of the fitted DataFrame after `fit_transform` — not reconstructed from config. This guarantees fundamentals columns (e.g. `reported_eps`, `sector_code`) and conditional OHLCV extras (VWAP, Transactions) are included when present. `feature_names` raises `RuntimeError` if accessed before `fit_transform`. Any caller writing the manifest must call `fit_transform` first.
+- `norm_stats` in the manifest comes from the **last walk-forward fold's train slice only**. `prep_windows_labels` returns raw (unnormalized) windows; `walk_forward_splits(pipe=pipe)` fits per-fold `NormStats` on each fold's train data — never on the full dataset (which would leak val/test distribution). `folds[-1].norm_stats` is written to the manifest and used for live inference normalization.
 
 **Consequences:** If alphaGen changes the feature pipeline format, the manifest schema must be versioned. alphaTrade must support reading manifest schema version 1.0.0.

@@ -3,7 +3,7 @@ service: alphaGen
 status: full
 stack: Python 3.11, FastAPI, Celery, PyTorch, ONNX, PostgreSQL, Redis, MinIO, MLflow, OpenTelemetry
 owner: ""
-last-reviewed: 2026-06-13
+last-reviewed: 2026-06-14
 tags:
   - service/alphaGen
   - status/full

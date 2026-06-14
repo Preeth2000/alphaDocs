@@ -108,6 +108,15 @@ Singleton row (id=1) — validation gate thresholds.
 
 ---
 
+## OHLCV Feature Notes
+
+| Feature | Behavior |
+|---|---|
+| **VWAP** (`include_vwap: true`) | Intraday (`1m`/`5m`/`15m`/`1h`): per-session (calendar-day) cumulative VWAP — resets each day. Daily/weekly: rolling 20-bar VWAP. Cumulative-from-dataset-start is non-stationary and diverges between training and live inference (different warmup offsets). |
+| **Fundamentals earnings** | `earnings_dates` index normalized to tz-naive by `tz_localize(None)` if tz-aware; tz-naive index left as-is. Data shifted forward by `announcement_lag_days` (default 1) to prevent look-ahead from after-hours releases. Failure to fetch logs a warning — eps columns are absent but training continues. |
+
+---
+
 ## MinIO Object Layout
 
 Bucket: `models`

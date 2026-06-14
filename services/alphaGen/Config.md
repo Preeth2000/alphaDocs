@@ -99,7 +99,7 @@ train:
   splits:
     type: walk_forward
     n_folds: 5
-    embargo_bars: 10
+    embargo_bars: 10   # Must be >= label.horizon_bars (validated at load time)
 
 export:
   opset: 17
@@ -136,6 +136,15 @@ Stored in `validation_settings` DB table (id=1). Accessible via `GET/PATCH /conf
 | `min_f1_class1` | `null` | Optional — checked if set |
 
 Gate failure error format: `gate:{category}:{decision}: {reason}` (e.g. `gate:backtest:reject: sharpe=0.12 < min_sharpe=0.50`)
+
+---
+
+## Config Validation Constraints
+
+| Constraint | Enforced by | Error |
+|---|---|---|
+| `train.splits.embargo_bars >= label.horizon_bars` | `RunConfig` `model_validator` at load | `ValueError` — labels look forward `horizon_bars` bars; embargo must cover this gap to prevent train labels near the fold boundary from reading prices inside the val window |
+| `data.interval` within yfinance history limit | `RunConfig` `model_validator` at load | `UserWarning` (not hard error) — intraday intervals have yfinance history caps |
 
 ---
 
