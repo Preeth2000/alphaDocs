@@ -20,7 +20,7 @@ tags:
 | Redis db0 | Pub/sub | Log streaming + model.ready events |
 | Redis db0 | Celery broker | Task routing |
 | Redis db1 | Celery results | Task state + return values |
-| MinIO `models` bucket | Object store | model.onnx, manifest.json, backtest.json |
+| MinIO `models` bucket | Object store | model.onnx, manifest.json, backtest.json, drift_reference.json |
 | MLflow `mlflow` DB | Relational | Experiment params, metrics, model registry |
 
 ---
@@ -105,6 +105,26 @@ Singleton row (id=1) — validation gate thresholds.
 | `003_add_force_save` | b2c3d4e5f6a7 | Add `run.force_save`, `run.source_run_id` |
 | `004_add_user_id_to_run` | c3d4e5f6a7b8 | Add `run.user_id` (multi-user) |
 | `005_add_visibility_to_run` | d4e5f6a7b8c9 | Add `run.visibility` (public library) |
+
+---
+
+## MinIO Object Layout
+
+Bucket: `models` (configurable via `MINIO_BUCKET`)
+
+```
+{MINIO_USER}/{MINIO_ACCOUNT}/{run_name}/
+├── latest                        # JSON pointer → current version
+├── v1/
+│   ├── model.onnx                # ONNX model (required)
+│   ├── manifest.json             # Inference contract: feature_names, window, norm_stats, input_shape, model_hash
+│   ├── backtest.json             # Backtest report: sharpe, max_drawdown, hit_rate, n_trades, per_class
+│   └── drift_reference.json      # Per-feature histogram bins for drift monitor (optional — non-fatal if absent)
+├── v2/
+│   └── ...
+```
+
+`drift_reference.json` is written during training (last-fold normalized windows), uploaded alongside required artifacts on publish. Used exclusively by the `check_drift_and_retrain` Beat task — not part of the inference contract (`manifest.json` is the inference contract).
 
 ---
 
