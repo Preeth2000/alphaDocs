@@ -36,6 +36,10 @@ Source: `alphaGen/.env.example`
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | ⬜ | OTel Collector OTLP endpoint |
 | `ALPHAKEY_URL` | `http://alphakey-api:8000` | ✅ | alphaKey service URL — JWKS fetched for JWT verification on all `/runs` routes |
 | `ALPHAKEY_SERVICE_TOKEN` | — | ⬜ | Service-to-service token for alphaKey vault API |
+| `JWT_ISSUER` | `alphakey` | ⬜ | Expected `iss` claim in Bearer JWTs; tokens with a different issuer are rejected |
+| `JWT_AUDIENCE` | `alphakey` | ⬜ | Expected `aud` claim in Bearer JWTs; tokens with a different audience are rejected |
+| `MINIO_ACCESS_KEY` | — | ✅ | Scoped MinIO service account for alphaGen (models bucket only); injected by alphaFrame |
+| `MINIO_SECRET_KEY` | — | ✅ | Secret for the scoped MinIO service account above |
 | `SECRETS_SOURCE` | `env` | ⬜ | `env` (vars) or `alphakey` (vault-fetched) |
 | `RETRAIN_MAX_ATTEMPTS` | `3` | ⬜ | Max automatic retrains before escalating to `flag_human` |
 | `RETRAIN_RETRY_DELAY_SECONDS` | `300` | ⬜ | Countdown (seconds) before the rescheduled Celery retrain task is dispatched |
