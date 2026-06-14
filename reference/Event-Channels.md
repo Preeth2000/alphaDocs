@@ -22,7 +22,7 @@ Hosted by [[services/alphaFrame/alphaFrame|alphaFrame]] Redis instance.
 | Channel | Pattern | Producer | Consumer(s) | Payload | Purpose |
 |---|---|---|---|---|---|
 | `run:{id}:log` | Per-run | [[services/alphaGen/alphaGen\|alphaGen]] Celery worker | [[services/alphaGen/alphaGen\|alphaGen]] API (`GET /runs/{id}/log`) | `{"type": "log"|"status"|"done", "text": "…", "status": "…"}` | Stream live training log lines + status transitions to SSE subscribers |
-| `model.ready` | Global | [[services/alphaGen/alphaGen\|alphaGen]] publish endpoint | [[services/alphaTrade/alphaTrade\|alphaTrade]] | `{"run_name": "…", "version": "…", "bucket": "…"}` | Notify when a new model is published to MinIO |
+| `model.ready` | Global | [[services/alphaGen/alphaGen\|alphaGen]] Celery worker (auto-promote) or `/runs/{id}/publish` endpoint | [[services/alphaTrade/alphaTrade\|alphaTrade]], [[services/alphaLink/alphaLink\|alphaLink]] | See schema below | Notify when a new model is ready for consumption |
 
 ---
 
@@ -52,16 +52,28 @@ SSE streams exposed by [[services/alphaGen/alphaGen|alphaGen]] (`GET` endpoints 
 
 #### `model.ready` event
 
+Emitted by two paths — consumers **must** tolerate both:
+
+| Path | `artifact_prefix` present? |
+|------|---------------------------|
+| Celery worker auto-promote (gate passed) | No |
+| `POST /runs/{id}/publish` (explicit MinIO push) | Yes |
+
 ```json
 {
-  "type": "model.ready",
   "run_name": "aapl_daily_mlp",
   "version": "3",
-  "minio_bucket": "models",
-  "minio_path": "aapl_daily_mlp/v3/model.onnx",
-  "manifest_path": "aapl_daily_mlp/v3/manifest.json"
+  "published_at": "2026-06-14T10:00:00+00:00",
+  "artifact_prefix": "user/account/aapl_daily_mlp/v3"
 }
 ```
+
+- `run_name` — MLflow registered model name
+- `version` — MLflow model version string
+- `published_at` — ISO 8601 with timezone
+- `artifact_prefix` *(optional)* — S3/MinIO object key prefix; only present when published via `/runs/{id}/publish`
+
+Contract tests: `tests/contract/test_model_ready_schema.py`
 
 ---
 

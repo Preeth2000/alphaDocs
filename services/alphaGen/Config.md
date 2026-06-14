@@ -18,7 +18,8 @@ Source: `alphaGen/.env.example`
 
 | Variable | Default | Required | Purpose |
 |---|---|---|---|
-| `DATABASE_URL` | `postgresql://att:att@postgres:5432/att` | ✅ | Postgres connection for `runs` + `validation_settings` |
+| `DATABASE_URL` | — | ✅ | Postgres connection for `runs` + `validation_settings`. **Required in production** — unset outside `ATT_ENV=test/dev` raises `RuntimeError` at startup |
+| `ATT_ENV` | — | ⬜ | Set to `test` or `dev` to allow in-memory SQLite fallback (local dev only). Unset in production |
 | `REDIS_URL` | `redis://redis:6379/0` | ✅ | Pub/sub + Celery broker |
 | `CELERY_BROKER_URL` | `redis://redis:6379/0` | ✅ | Celery task broker |
 | `CELERY_RESULT_BACKEND` | `redis://redis:6379/1` | ✅ | Celery task results |
@@ -36,6 +37,8 @@ Source: `alphaGen/.env.example`
 | `ALPHAKEY_URL` | `http://alphakey-api:8000` | ✅ | alphaKey service URL — JWKS fetched for JWT verification on all `/runs` routes |
 | `ALPHAKEY_SERVICE_TOKEN` | — | ⬜ | Service-to-service token for alphaKey vault API |
 | `SECRETS_SOURCE` | `env` | ⬜ | `env` (vars) or `alphakey` (vault-fetched) |
+| `RETRAIN_MAX_ATTEMPTS` | `3` | ⬜ | Max automatic retrains before escalating to `flag_human` |
+| `RETRAIN_RETRY_DELAY_SECONDS` | `300` | ⬜ | Countdown (seconds) before the rescheduled Celery retrain task is dispatched |
 
 ---
 
@@ -115,6 +118,7 @@ backtest:
 sweep:                          # Optional hyperparameter sweep
   enabled: false
   trials: 50
+  seed: 42                      # TPE sampler seed for reproducibility
   search_space: {}
 ```
 
@@ -135,7 +139,13 @@ Stored in `validation_settings` DB table (id=1). Accessible via `GET/PATCH /conf
 | `min_val_accuracy` | `null` | Optional — checked if set |
 | `min_f1_class1` | `null` | Optional — checked if set |
 
-Gate failure error format: `gate:{category}:{decision}: {reason}` (e.g. `gate:backtest:reject: sharpe=0.12 < min_sharpe=0.50`)
+Gate failure decisions:
+
+| Decision | Trigger | Outcome |
+|---|---|---|
+| `retrain` | `metric`/`training` category + budget not exhausted | Run reset to `queued`; new Celery task dispatched after `RETRAIN_RETRY_DELAY_SECONDS` |
+| `flag_human` | `structural`/`unknown` category, or retrain budget exhausted (`RETRAIN_MAX_ATTEMPTS`) | Run set to `failed`; error = `gate:{category}:flag_human: {reason}` |
+| `retry_later` | `infra` category (transient failure) | Run set to `failed`; error = `gate:infra:retry_later: {reason}` |
 
 ---
 
