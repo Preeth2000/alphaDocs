@@ -33,6 +33,7 @@ alphaLink is the unified frontend for the entire alphaPlatform. It provides:
 | `/trade/models/registry` | MLflow model registry view |
 | `/trade/models/public` | Public model library |
 | `/trade/backtest` | Backtest runner + results |
+| `/trade/jobs` | Background job log — paginated backtest run history with per-model drill-down |
 | `/trade/train/configure` | Model training config builder |
 | `/trade/train/runs` | Training job list |
 | `/trade/train/results` | Individual run results |
