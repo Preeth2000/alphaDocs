@@ -60,6 +60,9 @@ Source: `alphaTrade/.env.example`
 | `WEBHOOK_LEVEL` | `WARNING` | ⬜ | Minimum alert level for generic webhook |
 | `alphaTrade_API_KEY` | — | ⬜ | API key for all endpoints; if unset, requests are blocked (fail-closed) unless `ALPHATRADE_INSECURE_NO_AUTH=true` |
 | `ALPHATRADE_INSECURE_NO_AUTH` | `false` | ⬜ | Set to `true` to allow unauthenticated access when no API key configured (local dev only — never in production) |
+| `SECRETS_SOURCE` | `db` | ⬜ | `db` = secrets in DB columns (see `DB_SECRETS_KEY`); `alphakey` = fetch from alphaKey vault at runtime |
+| `DB_SECRETS_KEY` | — | ⬜ | Fernet key for at-rest encryption of secret DB columns (API keys, SMTP password, webhook URLs). Generate: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`. **Strongly recommended in production.** Absent = plaintext storage. |
+| `ALPHAKEY_USER_ID` | — | ⬜ | User ID for alphaKey vault lookups (required when `SECRETS_SOURCE=alphakey`) |
 | `REDIS__URL` | `redis://localhost:6379/0` | ⬜ | Redis for token denylist (when AUTH_MODE=alphakey) |
 | `REDIS__ENABLED` | `true` | ⬜ | Enable Redis integration |
 | `MINIO_ROOT_USER` | `minioadmin` | ✅ | MinIO credentials |
@@ -100,6 +103,8 @@ defaults:
 risk:
   max_positions: 5
   daily_loss_halt_pct: 0.05  # Halt new orders when daily PnL <= -5%
+  consensus_min_confidence: 0.0  # Min winning-class probability (0 = disabled, e.g. 0.5 requires ≥50%)
+  consensus_min_margin: 0.0      # Min lead over runner-up probability (0 = disabled, e.g. 0.1 requires 10pp margin)
 
 models:
   <run_name>:              # Keyed by manifest run_name

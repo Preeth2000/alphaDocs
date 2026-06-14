@@ -35,6 +35,7 @@ tags:
 |---|---|---|---|---|---|
 | `GET` | `/models` | All models: loaded + registry + MLflow + inactive | [[services/alphaLink/alphaLink\|alphaLink]] | 3 | 0 (+MLflow call) |
 | `DELETE` | `/models/{run_name}` | Delete model from disk + MLflow + MinIO + DB | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 2 (+MLflow+S3 delete) |
+| `DELETE` | `/models` | Bulk-delete models (body: `{"run_names": [...]}`) — ownership-checked per model; parallel via `asyncio.gather` | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | N×2 |
 | `GET` | `/models/overrides` | All per-model config overrides | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 0 |
 | `GET` | `/models/{run_name}/overrides` | Single model overrides (or defaults if not set) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 0 |
 | `PUT` | `/models/{run_name}/overrides` | Update model override (enabled, sizing, retirement, etc.) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 (UPSERT) |
