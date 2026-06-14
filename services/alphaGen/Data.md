@@ -108,12 +108,30 @@ Singleton row (id=1) — validation gate thresholds.
 
 ---
 
+## OHLCV Data Validation
+
+`validate_ohlcv()` runs after every fetch (yfinance and Polygon) and raises `DataQualityError` if:
+
+| Check | Threshold | Error |
+|---|---|---|
+| Duplicate timestamps | Any | `N duplicate timestamp(s)` |
+| Zero/negative OHLC | Any bar | `N zero/negative value(s) in {col}` |
+| Negative volume | Any bar | `N negative volume value(s)` |
+| High < Low | Any bar | `N bar(s) with High < Low` |
+| Extreme single-bar return | >90% | `N bar(s) with >90% single-bar price move` |
+| Daily coverage | <70% of estimated trading days | `fetched N bars, expected ~M trading days (X% coverage)` |
+
+Validation runs before feature engineering — a bad fetch fails the run immediately with a clear error message rather than silently poisoning model weights.
+
+---
+
 ## OHLCV Feature Notes
 
 | Feature | Behavior |
 |---|---|
 | **VWAP** (`include_vwap: true`) | Intraday (`1m`/`5m`/`15m`/`1h`): per-session (calendar-day) cumulative VWAP — resets each day. Daily/weekly: rolling 20-bar VWAP. Cumulative-from-dataset-start is non-stationary and diverges between training and live inference (different warmup offsets). |
 | **Fundamentals earnings** | `earnings_dates` index normalized to tz-naive by `tz_localize(None)` if tz-aware; tz-naive index left as-is. Data shifted forward by `announcement_lag_days` (default 1) to prevent look-ahead from after-hours releases. Failure to fetch logs a warning — eps columns are absent but training continues. |
+| **Multi-ticker union+ffill** | `alignment='union'` with `fill='ffill'` fabricates flat bars (identical OHLCV) for tickers missing on a given date. These synthetic bars feed labels and create false signals. Prefer `alignment='intersection'` or `fill='drop'`. A `UserWarning` is emitted when this combination is detected. |
 
 ---
 
