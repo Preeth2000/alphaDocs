@@ -138,3 +138,6 @@ After a BUY order fills, a dedicated async task polls both bracket legs every 10
 - **Health on separate port 8080**: Container probe (`GET /healthz`) decoupled from API auth on 8081.
 - **SELL quantity = held position qty**: SELL orders use `position.quantity`, not `compute_quantity()`, preventing oversell and partial-close journaling errors.
 - **Auth fail-closed**: No `alphaTrade_API_KEY` + no `ALPHATRADE_INSECURE_NO_AUTH=true` → 401. The old open-by-default behaviour required explicit opt-in to insecure dev mode.
+- **T212Client HTTP pooling**: `T212Client` owns a single `httpx.Client` instance; all `_get`/`_post`/`_delete` reuse it. Eliminates TCP+TLS handshake per OCO poll (2 calls/10s/position). Call `client.close()` or use as context manager to release. Module-level `httpx.get/post/delete` functions removed.
+- **get_total_equity fail-closed**: Raises `ValueError` (not returns 0) when `totalValue` absent from account summary. Callers must skip the tick — trading on cash-only equity would exclude position value and mis-size orders.
+- **Calendar scheduling fail-loud**: `bar_close._next_daily_bar_close` / `_next_weekly_bar_close` log `ERROR` on `exchange_calendars` failure before falling back to UTC-midnight arithmetic. Silent fallback previously masked misconfigured environments where daily bars fired at midnight instead of 4 pm ET.
