@@ -191,7 +191,12 @@ a BFF route that proxies `DELETE /models` with the selected `run_names`. Surface
 
 ---
 
-## 2. alphaTrade — contract + auth + infra dependencies
+## 2. alphaTrade — contract + auth + infra dependencies — ✅ CLOSED (2026-06-14)
+
+> [!success] All items closed — alphaTrade session 2026-06-14
+> §2.1 model.ready consumer (Redis dual-path + contract tests), §2.2 JWT iss/aud validation
+> (PyJWT issuer/audience params + contract tests), §2.3 DB_SECRETS_KEY (Fernet code pre-existing,
+> alphaFrame §4.2 already wired). See alphaTrade commit `a20f8e9` and alphaDocs commit `7974ca1`.
 
 **Driver:** [[services/alphaGen/alphaGen|alphaGen]] changed the `model.ready` event schema and
 [[services/alphaKey/alphaKey|alphaKey]] added `iss`/`aud` JWT claims; [[services/alphaFrame/alphaFrame|alphaFrame]]
