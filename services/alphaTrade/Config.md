@@ -58,6 +58,8 @@ Source: `alphaTrade/.env.example`
 | `API_PORT` | `8081` | ⬜ | FastAPI listen port |
 | `WEBHOOK_URL` | — | ⬜ | Generic webhook URL for alerts |
 | `WEBHOOK_LEVEL` | `WARNING` | ⬜ | Minimum alert level for generic webhook |
+| `alphaTrade_API_KEY` | — | ⬜ | API key for all endpoints; if unset, requests are blocked (fail-closed) unless `ALPHATRADE_INSECURE_NO_AUTH=true` |
+| `ALPHATRADE_INSECURE_NO_AUTH` | `false` | ⬜ | Set to `true` to allow unauthenticated access when no API key configured (local dev only — never in production) |
 | `REDIS__URL` | `redis://localhost:6379/0` | ⬜ | Redis for token denylist (when AUTH_MODE=alphakey) |
 | `REDIS__ENABLED` | `true` | ⬜ | Enable Redis integration |
 | `MINIO_ROOT_USER` | `minioadmin` | ✅ | MinIO credentials |

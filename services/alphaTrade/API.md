@@ -15,7 +15,7 @@ tags:
 ## Inbound Endpoints
 
 **Base URL:** `http://alphatrade:8081/api/v1` (internal)  
-**Auth:** Bearer token or `X-API-Key` header (alphaTrade_API_KEY from BotSettings or env)  
+**Auth:** Bearer token (`Authorization: Bearer <jwt>`) or `X-API-Key` header — enforced via `make_jwt_dep`. **Fail-closed by default**: if `alphaTrade_API_KEY` is unset and `AUTH_MODE` is `legacy`, all requests return 401 unless `ALPHATRADE_INSECURE_NO_AUTH=true` (local dev only). JWT mode verifies ES256 tokens via alphaKey JWKS; X-API-Key accepted as legacy fallback only when a key is configured.  
 **Health probe (no auth):** `http://alphatrade:8080`
 
 ### Trading State

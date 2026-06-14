@@ -112,9 +112,11 @@ Applied in order before any order:
 ## OCO Monitor (per-position async task)
 
 After a BUY order fills, a dedicated async task polls both bracket legs every 10s:
-- On SL fill → cancel TP, record `TradeJournal (exit_reason=OCO_SL)`, check retirement, set cooldown
-- On TP fill → cancel SL, record `TradeJournal (exit_reason=OCO_TP)`, check retirement, set cooldown
+- T212 `get_order` / `cancel_order` calls run via `asyncio.to_thread` — prevents event loop stalls on slow/429 T212 polls
+- On SL fill → cancel TP leg (via `to_thread`), record `TradeJournal (exit_reason=OCO_SL)`, check retirement, set cooldown
+- On TP fill → cancel SL leg (via `to_thread`), record `TradeJournal (exit_reason=OCO_TP)`, check retirement, set cooldown
 - On non-fill terminal (CANCELLED/REJECTED) → cancel other leg, send warning webhook
+- **On SELL signal fill**: cancels the OCO monitor task AND cancels both active broker legs before removing the position — prevents orphaned SL/TP orders from executing against a closed position
 
 ---
 
@@ -134,3 +136,5 @@ After a BUY order fills, a dedicated async task polls both bracket legs every 10
 - **Softmax consensus**: Multi-model averaging prevents single-model noise driving expensive orders.
 - **Kill switch = HALT file**: Inference continues; only order submission is blocked. Allows diagnosis without losing market state.
 - **Health on separate port 8080**: Container probe (`GET /healthz`) decoupled from API auth on 8081.
+- **SELL quantity = held position qty**: SELL orders use `position.quantity`, not `compute_quantity()`, preventing oversell and partial-close journaling errors.
+- **Auth fail-closed**: No `alphaTrade_API_KEY` + no `ALPHATRADE_INSECURE_NO_AUTH=true` → 401. The old open-by-default behaviour required explicit opt-in to insecure dev mode.
