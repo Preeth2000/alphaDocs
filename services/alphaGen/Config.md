@@ -20,9 +20,9 @@ Source: `alphaGen/.env.example`
 |---|---|---|---|
 | `DATABASE_URL` | — | ✅ | Postgres connection for `runs` + `validation_settings`. **Required in production** — unset outside `ATT_ENV=test/dev` raises `RuntimeError` at startup |
 | `ATT_ENV` | — | ⬜ | Set to `test` or `dev` to allow in-memory SQLite fallback (local dev only). Unset in production |
-| `REDIS_URL` | `redis://redis:6379/0` | ✅ | Pub/sub + Celery broker |
-| `CELERY_BROKER_URL` | `redis://redis:6379/0` | ✅ | Celery task broker |
-| `CELERY_RESULT_BACKEND` | `redis://redis:6379/1` | ✅ | Celery task results |
+| `REDIS_URL` | `redis://:password@redis:6379/0` | ✅ | Pub/sub + Celery broker (password required — see `REDIS_PASSWORD` in alphaFrame) |
+| `CELERY_BROKER_URL` | `redis://:password@redis:6379/0` | ✅ | Celery task broker |
+| `CELERY_RESULT_BACKEND` | `redis://:password@redis:6379/1` | ✅ | Celery task results |
 | `MINIO_ENDPOINT` | `http://minio:9000` | ✅ | MinIO S3 endpoint for artifact storage |
 | `MINIO_ACCESS_KEY` | `minioadmin` | ✅ | MinIO credentials |
 | `MINIO_SECRET_KEY` | `minioadmin` | ✅ | MinIO credentials |

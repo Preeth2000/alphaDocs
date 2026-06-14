@@ -35,14 +35,26 @@ Source: `alphaFrame/.env.example` → copy to `.env`
 | `GRAFANA_ADMIN_PASSWORD` | `changeme` | ✅ | Grafana admin password |
 | `SLACK_WEBHOOK_URL` | — | ⬜ | Alertmanager Slack webhook for `severity=critical` alerts |
 | `PAGERDUTY_ROUTING_KEY` | — | ⬜ | Alertmanager PagerDuty routing key for `severity=critical` alerts |
-| `VAULT_MASTER_KEY` | — | ✅ | 32-byte base64 KEK for alphaKey credential vault |
+| `VAULT_MASTER_KEY` | — | ✅ | 32-byte base64url KEK for alphaKey credential vault |
+| `VAULT_MASTER_KEY_1` | — | ⬜ | Previous KEK version for rotation. See alphaKey/Config for rotation procedure. |
 | `ALPHAKEY_SERVICE_TOKENS` | — | ✅ | `token:principal` pairs for service-to-service auth |
 | `ALPHAKEY_SERVICE_TOKEN_TRADE` | — | ✅ | alphaTrade's service token (subset of SERVICE_TOKENS) |
 | `ALPHAKEY_SERVICE_TOKEN_GEN` | — | ✅ | alphaGen's service token (subset of SERVICE_TOKENS) |
+| `ALPHAKEY_USER_ID` | — | ⬜ | Default user UUID for vault namespace |
 | `ACCESS_TOKEN_TTL` | `600` | ⬜ | JWT access token lifetime (seconds) |
 | `REFRESH_TOKEN_TTL` | `1209600` | ⬜ | Refresh token lifetime (seconds; 14 days) |
-| `ALPHAKEY_USER_ID` | — | ⬜ | Default user UUID for vault namespace |
+| `JWT_ISSUER` | `alphakey` | ⬜ | `iss` claim — must match across alphaKey issuer and all service verifiers |
+| `JWT_AUDIENCE` | `alphakey` | ⬜ | `aud` claim — must match across alphaKey issuer and all service verifiers |
+| `ALPHAKEY_CORS_ORIGINS` | `""` | ⬜ | Comma-separated CORS origins for alphaKey API. Empty = no CORS headers (nginx fronts everything). |
+| `SMTP_HOST` | `""` | ⬜ | SMTP relay host for alphaKey password reset emails. Reset returns `501` if empty. |
+| `SMTP_PORT` | `587` | ⬜ | SMTP port |
+| `SMTP_FROM` | `noreply@alphakey.local` | ⬜ | From address for reset emails |
+| `SMTP_USER` | `""` | ⬜ | SMTP auth username |
+| `SMTP_PASSWORD` | `""` | ⬜ | SMTP auth password |
+| `SMTP_TLS` | `true` | ⬜ | Use STARTTLS |
+| `PASSWORD_RESET_TTL` | `3600` | ⬜ | alphaKey reset token lifetime (seconds) |
 | `SECRETS_SOURCE` | `db` | ⬜ | `db` (BotSettings DB columns) or `alphakey` (vault) |
+| `DB_SECRETS_KEY` | — | ⬜ | Fernet key for at-rest encryption of alphaTrade BotSettings secret columns. Generate: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
 | `AUTH_MODE` | `legacy` | ⬜ | `legacy` (no JWT) or `alphakey` (JWT required) |
 
 ---
@@ -81,17 +93,28 @@ Command: `mlflow server --backend-store-uri postgresql://platform:${PG_PW}@postg
 ### alphakey-api
 ```yaml
 DATABASE_URL: postgresql://platform:${POSTGRES_PASSWORD}@postgres:5432/alphakey
-REDIS__URL: redis://redis:6379/0
+REDIS__URL: redis://:${REDIS_PASSWORD}@redis:6379/2
 VAULT_MASTER_KEY: ${VAULT_MASTER_KEY}
+VAULT_MASTER_KEY_1: ${VAULT_MASTER_KEY_1:-}
 ALPHAKEY_SERVICE_TOKENS: ${ALPHAKEY_SERVICE_TOKENS}
-ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL}
-REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL}
+ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-600}
+REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-1209600}
+JWT_ISSUER: ${JWT_ISSUER:-alphakey}
+JWT_AUDIENCE: ${JWT_AUDIENCE:-alphakey}
+ALPHAKEY_CORS_ORIGINS: ${ALPHAKEY_CORS_ORIGINS:-}
+SMTP_HOST: ${SMTP_HOST:-}
+SMTP_PORT: ${SMTP_PORT:-587}
+SMTP_FROM: ${SMTP_FROM:-noreply@alphakey.local}
+SMTP_USER: ${SMTP_USER:-}
+SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+SMTP_TLS: ${SMTP_TLS:-true}
+PASSWORD_RESET_TTL: ${PASSWORD_RESET_TTL:-3600}
 OTEL_SERVICE_NAME: alphakey
 OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
 OTEL_EXPORTER_OTLP_PROTOCOL: grpc
 ```
 
-### alphagen-api + alphagen-worker
+### alphagen-api + alphagen-worker + alphagen-beat
 ```yaml
 DATABASE_URL: postgresql://platform:${POSTGRES_PASSWORD}@postgres:5432/alphagen
 REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -105,27 +128,43 @@ MINIO_SECRET_KEY: ${MINIO_ALPHAGEN_PASSWORD}
 MINIO_BUCKET: models
 POLYGON_API_KEY: ${POLYGON_API_KEY}
 ALPHAKEY_URL: http://alphakey-api:8000
-ALPHAKEY_SERVICE_TOKEN: ${ALPHAKEY_SERVICE_TOKEN_GEN}
-ALPHAKEY_USER_ID: ${ALPHAKEY_USER_ID}
-SECRETS_SOURCE: ${SECRETS_SOURCE}
-OTEL_SERVICE_NAME: alphagen-api | alphagen-worker
+ALPHAKEY_SERVICE_TOKEN: ${ALPHAKEY_SERVICE_TOKEN_GEN:-}
+ALPHAKEY_USER_ID: ${ALPHAKEY_USER_ID:-}
+SECRETS_SOURCE: ${SECRETS_SOURCE:-db}
+JWT_ISSUER: ${JWT_ISSUER:-alphakey}
+JWT_AUDIENCE: ${JWT_AUDIENCE:-alphakey}
+OTEL_SERVICE_NAME: alphagen-api | alphagen-worker | alphagen-beat
 OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+# alphagen-beat only:
+DRIFT_ENABLED: "true"
+DRIFT_PSI_THRESHOLD: "0.20"
+DRIFT_KS_THRESHOLD: "0.10"
+DRIFT_CHECK_INTERVAL_SECONDS: "86400"
+DRIFT_LOOKBACK_BARS: "252"
+DRIFT_MIN_LIVE_BARS: "50"
+RETRAIN_MAX_ATTEMPTS: "3"
+RETRAIN_RETRY_DELAY_SECONDS: "300"
 ```
 
 ### alphatrade
 ```yaml
 DATABASE_URL: postgresql://platform:${POSTGRES_PASSWORD}@postgres:5432/alphatrade
 REDIS__URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+DB_SECRETS_KEY: ${DB_SECRETS_KEY:-}
 ALPHAKEY_URL: http://alphakey-api:8000
-ALPHAKEY_SERVICE_TOKEN: ${ALPHAKEY_SERVICE_TOKEN_TRADE}
-ALPHAKEY_USER_ID: ${ALPHAKEY_USER_ID}
-SECRETS_SOURCE: ${SECRETS_SOURCE}
+ALPHAKEY_SERVICE_TOKEN: ${ALPHAKEY_SERVICE_TOKEN_TRADE:-}
+ALPHAKEY_USER_ID: ${ALPHAKEY_USER_ID:-}
+SECRETS_SOURCE: ${SECRETS_SOURCE:-db}
+JWT_ISSUER: ${JWT_ISSUER:-alphakey}
+JWT_AUDIENCE: ${JWT_AUDIENCE:-alphakey}
 MLFLOW_TRACKING_URI: http://mlflow:5000
 MLFLOW_S3_ENDPOINT_URL: http://minio:9000
 AWS_ACCESS_KEY_ID: ${MINIO_ALPHATRADE_USER}
 AWS_SECRET_ACCESS_KEY: ${MINIO_ALPHATRADE_PASSWORD}
 OTEL_SERVICE_NAME: alphatrade
 OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+OTEL_EXPORTER_OTLP_PROTOCOL: grpc
 ```
 
 ### alphalink
@@ -158,7 +197,7 @@ GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
 |---|---|
 | `observability/otel-collector/config.yaml` | 3 pipelines: traces→Tempo, metrics→Prometheus, logs→Loki |
 | `observability/prometheus/prometheus.yml` | Scrape targets, 15d retention, remote-write receiver |
-| `observability/prometheus/rules/alerts.yml` | 7 alert rules |
+| `observability/prometheus/rules/alerts.yml` | 9 alert rules (includes AlphaGenDriftPSI + AlphaGenDriftKS) |
 | `observability/loki/config.yaml` | 7d retention, TSDB v13, volume enabled |
 | `observability/tempo/config.yaml` | 7d retention, service-graphs + span-metrics processors |
 | `observability/alertmanager/config.yaml` | Null default receiver; critical route (30s group_wait) → Slack + PagerDuty via env vars; inhibit rules |
