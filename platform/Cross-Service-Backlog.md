@@ -1,0 +1,533 @@
+---
+page: Cross-Service-Backlog
+tags:
+  - platform
+  - backlog
+  - cross-service
+last-reviewed: 2026-06-14
+---
+
+# Cross-Service Backlog — Follow-On Work From 2026-06-06 → 2026-06-14 Doc Changes
+
+[[README]] · [[platform/Code-Review-2026-06-13]] · [[platform/Overview]] · [[platform/Key-Decisions]]
+
+> [!abstract] What this page is
+> Between **2026-06-06** (vault initialisation) and **2026-06-14**, documentation across all
+> seven services was updated to reflect the [[platform/Code-Review-2026-06-13|2026-06-13 platform code review]]
+> and a wave of feature + security work. Many of those changes landed in **one** service but
+> create **obligations in other services** that have not yet been implemented.
+>
+> This page is the authoritative cross-service work list. Each item states **why** it exists
+> (the upstream change that triggered it), **what** must be built, the **exact contract**
+> (endpoints, payloads, env vars, schemas) needed to build it, and **acceptance criteria**
+> (linked to scenarios in [[services/alphaTest/Regression-Scenarios]] where one exists).
+>
+> An agent working in a single service repo should be able to read its own section here and
+> execute without needing to re-derive the contract from other repos.
+
+> [!info] Source of truth
+> Everything below is derived from `git diff af11c67 HEAD` over `services/`, `reference/`,
+> `platform/`, plus the uncommitted working-tree changes to `services/alphaKey/*`. When in
+> doubt, re-run that diff and the alphaKey working-tree diff to confirm the current contract.
+
+---
+
+## How to read the priority labels
+
+| Label | Meaning |
+|---|---|
+| **P0 — blocks a shipped feature** | An upstream feature is live/merged but unusable end-to-end until this work lands (e.g. password reset has no UI). |
+| **P1 — correctness / contract** | A contract changed; consumers will break or silently misbehave until updated. |
+| **P2 — hardening / completeness** | Improves security posture or operability; not blocking a user-visible flow. |
+
+---
+
+## 1. alphaLink (UI / BFF) — ✅ CLOSED (2026-06-14)
+
+> [!success] All 7 items closed — alphaLink session 2026-06-14
+> All P0/P1/P2 alphaLink items landed in one session. Commits `3de28b6` (auth flows) and
+> `bed3bd2` (lockout, bulk delete, consensus gates, admin) in the alphaLink repo.
+> alphaDocs updated in commits `8901e0a` and `463a9de`.
+
+**Driver:** [[services/alphaKey/alphaKey|alphaKey]] shipped a large set of **user-facing** auth
+features (password reset, MFA, session management, admin enable, login lockout) and
+[[services/alphaTrade/alphaTrade|alphaTrade]] added two operator features (consensus gates,
+bulk delete). alphaLink is the **only** UI in the platform.
+
+> [!note] BFF pattern reminder
+> Browser never calls backends directly. Every backend call goes through a Next.js route handler
+> under `src/app/api/*`. Auth routes proxy to alphaKey; the server reads the `alphakey_session`
+> httpOnly cookie via `src/lib/server-auth.ts` (`getSessionToken`) and forwards
+> `Authorization: Bearer <token>` using `bearerHeader(token)`. Add new BFF routes the same way.
+> See [[services/alphaLink/Architecture]] and [[services/alphaLink/API]].
+
+### 1.1 Password reset flow — ✅ Done (2026-06-14)
+**Why:** alphaKey added `POST /auth/forgot-password` and `POST /auth/reset-password`
+(see [[services/alphaKey/API]]). No UI or BFF route exists, so a user who forgets their password
+is permanently locked out.
+
+**Build:**
+- **Page `/forgot-password`** — email input form. On submit, calls BFF route below. Always shows
+  the same neutral confirmation ("If an account exists for that email, a reset link has been sent")
+  regardless of outcome — the backend deliberately never reveals whether the email exists.
+- **Page `/reset-password`** — reads `?token=` from the query string, presents new-password +
+  confirm fields, posts to BFF route below. On success, redirect to `/login` with a success banner.
+  On `400`/expired/used token, show "This reset link is invalid or has expired" and a link back to
+  `/forgot-password`.
+- **BFF route `POST /api/auth/forgot-password`** → proxies `POST /auth/forgot-password`.
+  Transparent body `{email}`. Pass through `204` as success. If alphaKey returns `501`
+  (SMTP not configured), surface a clear admin-facing error ("Password reset is not available —
+  email delivery is not configured").
+- **BFF route `POST /api/auth/reset-password`** → proxies `POST /auth/reset-password`.
+  Body `{token, new_password}`. On success alphaKey marks the token used, sets the new password,
+  and **revokes all sessions** for that user — so after reset the user must log in fresh; do not
+  attempt to auto-login with stale cookies.
+- Add both `/forgot-password` and `/reset-password` to the middleware **public-route allowlist**
+  (alongside `/login`, `/signup`, `/api/auth/*`) so the JWT guard does not redirect an
+  unauthenticated user away from them. See [[services/alphaLink/Config]] middleware section.
+- Add a "Forgot password?" link on `/login`.
+
+**Contract (from alphaKey):**
+| Endpoint | Auth | Body | Success | Notes |
+|---|---|---|---|---|
+| `POST /auth/forgot-password` | none | `{email}` | `204` always | `501` if `SMTP_HOST` unset. Writes `password_reset_token` + audit. |
+| `POST /auth/reset-password` | none | `{token, new_password}` | `204`/`200` | Token is single-use, SHA-256 hashed server-side, TTL `PASSWORD_RESET_TTL` (default 3600s). Revokes all sessions on success. |
+
+**Acceptance:** A user with no session can request a reset, receive a link (SMTP configured in
+[[services/alphaFrame/alphaFrame|alphaFrame]] — see §4.1), set a new password, and log in with it;
+old sessions are dead. The non-existent-email path is visually indistinguishable from the success path.
+
+### 1.2 MFA / TOTP — ✅ Done (2026-06-14)
+**Why:** alphaKey added `POST /auth/me/totp/setup`, `/verify`, `/disable`, the `user.totp_secret_encrypted`
++ `user.totp_enabled` columns, and a **login step-up**: when `totp_enabled=true`, `POST /auth/login`
+requires a `totp_code` field; without it login returns `401` with header `X-TOTP-Required: true`.
+
+**Build:**
+- **Account-settings enrollment** (in `/account`): a "Two-factor authentication" section.
+  1. Call BFF → `POST /auth/me/totp/setup`; response contains a **provisioning URI** (otpauth://…).
+     Render it as a QR code (and show the raw secret for manual entry). MFA is **not yet active** at
+     this point.
+  2. Prompt the user for their first 6-digit code; call BFF → `POST /auth/me/totp/verify`. On success
+     MFA is active — reflect `totp_enabled=true` in the UI.
+  3. Provide a **Disable** action → BFF `POST /auth/me/totp/disable`, which requires the current TOTP
+     code (collect it before calling).
+- **Login step-up:** update the `/login` flow and the `POST /api/auth/login` BFF route. When the
+  upstream login responds `401` with `X-TOTP-Required: true`, do **not** treat it as a failed
+  password — instead reveal a "Authentication code" field and resubmit `POST /auth/login` with
+  `{email, password, totp_code}`. Distinguish this from a genuine bad-password `401`.
+- **BFF routes:** `POST /api/auth/me/totp/setup`, `POST /api/auth/me/totp/verify`,
+  `POST /api/auth/me/totp/disable` — all Bearer-forwarded via `getSessionToken`/`bearerHeader`.
+
+**Contract (from alphaKey):**
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /auth/me/totp/setup` | Bearer | Generates secret, returns provisioning URI. Stores encrypted secret. Does **not** enable MFA. |
+| `POST /auth/me/totp/verify` | Bearer | Confirms first code → activates MFA. |
+| `POST /auth/me/totp/disable` | Bearer | Requires current TOTP code. Deactivates MFA. |
+| `POST /auth/login` | none | Accepts optional `totp_code`. If `totp_enabled` and code missing/invalid → `401` + `X-TOTP-Required: true`. |
+
+**Acceptance:** A user can enrol MFA from `/account` (scan QR in an authenticator app, verify),
+then on next login is prompted for a code and cannot log in without it; disabling MFA requires a
+valid current code. New regression scenario required — see §6.
+
+### 1.3 Active session management — ✅ Done (2026-06-14)
+**Why:** alphaKey added `GET /auth/me/sessions` (list active refresh tokens) and
+`DELETE /auth/me/sessions/{id}` (revoke one). No UI exists.
+
+**Build:**
+- In `/account`, a "Active sessions" list: one row per session showing whatever identifying fields
+  alphaKey returns (created time, user-agent, IP, current-session marker). Each row has a "Revoke"
+  button → BFF `DELETE /api/auth/me/sessions/{id}`.
+- BFF routes `GET /api/auth/me/sessions` and `DELETE /api/auth/me/sessions/{id}`, Bearer-forwarded.
+- If the user revokes the session they are currently using, handle the subsequent `401` gracefully
+  (redirect to `/login?reason=session_expired`, reusing the existing session-expired UX).
+
+**Acceptance:** A user can see their active sessions and revoke any of them; a revoked session's
+access token is rejected platform-wide within ~1s (denylist). Aligns with
+[[services/alphaTest/Regression-Scenarios|A6]] (kill-switch / session lifecycle).
+
+### 1.4 Login lockout / rate-limit UX — ✅ Done (2026-06-14)
+**Why:** alphaKey added login rate limiting: **20 attempts / IP / 5 min** and
+**5 failures / account / 15 min**, with a 15-minute account lockout (Redis keys
+`alphakey:rl:ip:*`, `alphakey:rl:acct:*`, `alphakey:lockout:*`). The login endpoint will now
+return throttle/lockout responses (HTTP `429`).
+
+**Build:** The `/login` page must detect the throttled/locked response and show a clear message
+("Too many attempts. Try again in ~15 minutes.") instead of the generic "invalid credentials"
+error. Do not retry automatically. Do not leak whether the email exists.
+
+**Acceptance:** Repeated bad logins surface a lockout message, not a credentials error.
+Aligns with [[services/alphaTest/Regression-Scenarios|A10]] (brute-force lockout).
+
+### 1.5 Admin user management — enable / disable — ✅ Done (2026-06-14)
+**Why:** alphaKey added `PATCH /auth/admin/users/{uid}/enable` and changed
+`PATCH /auth/admin/users/{uid}/disable` to bump `token_version` + revoke all refresh tokens on
+disable. There is no admin UI section in alphaLink today.
+
+**Build:** An admin-only users view (gated on `role`) listing users (`GET /auth/admin/users`) with
+**Enable**, **Disable**, role-change, and **Force logout** (`POST /auth/admin/users/{uid}/kill`)
+actions, each via a Bearer-forwarded BFF route. Disable must visibly reflect that the user is
+immediately logged out everywhere.
+
+**Acceptance:** An admin can disable a user (who is then unable to log in or refresh) and re-enable
+them. Aligns with [[services/alphaTest/Regression-Scenarios|A6]].
+
+### 1.6 Consensus confidence gates in model-override editor — ✅ Done (2026-06-14)
+**Why:** alphaTrade added `consensus_min_confidence` and `consensus_min_margin` to the per-model /
+risk config (see [[services/alphaTrade/Config]]). The override editor UI does not expose them.
+
+**Build:** Add two numeric inputs to the model-override form (`PUT /models/{run_name}/overrides`):
+`consensus_min_confidence` (min winning-class probability, `0` = disabled) and
+`consensus_min_margin` (min lead over runner-up, `0` = disabled). Document inline that low-conviction
+signals below these thresholds are coerced to HOLD.
+
+**Acceptance:** Operator can set both gates per model from the UI and see them persisted.
+
+### 1.7 Bulk model delete — ✅ Done (2026-06-14)
+**Why:** alphaTrade added `DELETE /models` (bulk) with body `{run_names: [...]}`, ownership-checked
+per model, executed in parallel via `asyncio.gather`.
+
+**Build:** On the models page(s) (`/trade/models/*`), add multi-select + "Delete selected" calling
+a BFF route that proxies `DELETE /models` with the selected `run_names`. Surface per-model success/failure.
+
+**Acceptance:** Operator can select several models and delete them in one action.
+
+---
+
+## 2. alphaTrade — contract + auth + infra dependencies — ✅ CLOSED (2026-06-14)
+
+> [!success] All items closed — alphaTrade session 2026-06-14
+> §2.1 model.ready consumer (Redis dual-path + contract tests), §2.2 JWT iss/aud validation
+> (PyJWT issuer/audience params + contract tests), §2.3 DB_SECRETS_KEY (Fernet code pre-existing,
+> alphaFrame §4.2 already wired). See alphaTrade commit `a20f8e9` and alphaDocs commit `7974ca1`.
+
+**Driver:** [[services/alphaGen/alphaGen|alphaGen]] changed the `model.ready` event schema and
+[[services/alphaKey/alphaKey|alphaKey]] added `iss`/`aud` JWT claims; [[services/alphaFrame/alphaFrame|alphaFrame]]
+now provisions per-service secrets that alphaTrade must consume.
+
+### 2.1 Update the `model.ready` consumer — ✅ Done (2026-06-14)
+**Why:** The event payload changed. alphaTrade consumes it in `runs.py run_events()` via the
+SSE `GET /runs/events` stream (see [[services/alphaTrade/Interactions]] and [[reference/Event-Channels]]).
+
+**Old payload (no longer sent):**
+```json
+{ "type": "model.ready", "run_name": "...", "version": "...",
+  "minio_bucket": "models", "minio_path": ".../model.onnx", "manifest_path": ".../manifest.json" }
+```
+**New payload — consumers MUST tolerate BOTH emit paths:**
+```json
+{ "run_name": "aapl_daily_mlp", "version": "3",
+  "published_at": "2026-06-14T10:00:00+00:00",
+  "artifact_prefix": "user/account/aapl_daily_mlp/v3" }
+```
+| Emit path | `artifact_prefix` present? |
+|---|---|
+| Celery worker auto-promote (gate passed) | **No** |
+| `POST /runs/{id}/publish` (explicit MinIO push) | **Yes** |
+
+**Build:** Rewrite the consumer to:
+- Stop reading `type`, `minio_bucket`, `minio_path`, `manifest_path` (gone).
+- Use `artifact_prefix` to locate artifacts in the `models` bucket **when present**; when **absent**
+  (auto-promote path), resolve the object location via the `latest` pointer / `{run_name}/v{version}/`
+  layout documented in [[services/alphaGen/Data]] (MinIO Object Layout).
+- Tolerate unknown/extra fields (forward-compatible parsing).
+- Parse `published_at` as ISO-8601 with timezone.
+
+**Acceptance:** A model published via **both** auto-promote and explicit `/runs/{id}/publish`
+triggers `model_sync` correctly. Aligns with [[services/alphaTest/Regression-Scenarios|D3]]
+(model.ready schema — single versioned shape, consumers tolerate unknown fields) and the upstream
+contract test `tests/contract/test_model_ready_schema.py`.
+
+### 2.2 JWT `iss` / `aud` validation — ✅ Done (2026-06-14)
+**Why:** alphaKey now writes `iss: "alphakey"` and `aud: "alphakey"` into every JWT and verifies
+them on decode (see [[services/alphaKey/Architecture]]). alphaTrade verifies tokens via
+`make_jwt_dep` (ES256 against alphaKey JWKS).
+
+**Build:** Confirm `make_jwt_dep` either validates `iss`/`aud` against the configured values or at
+minimum does **not** reject tokens that now carry these claims. If the JWT library enforces audience
+by default, set the expected `aud`/`iss` (`alphakey`, overridable via `JWT_AUDIENCE`/`JWT_ISSUER`).
+`kid` remains in the JWT **header** (not payload) for JWKS lookup.
+
+**Acceptance:** Valid alphaKey-issued tokens authenticate against alphaTrade `/api/v1/*`; tokens
+with a wrong `aud`/`iss` are rejected. Aligns with [[services/alphaTest/Regression-Scenarios|L16]]
+(API auth enforced).
+
+### 2.3 Secrets-at-rest key from infra — ✅ Done (2026-06-14)
+**Why:** alphaTrade added Fernet at-rest encryption for `BotSettings` secret columns (API keys,
+SMTP password, Slack webhook), gated on `DB_SECRETS_KEY` (see [[services/alphaTrade/Config]] and
+[[services/alphaTrade/Architecture]]). Without the key, secrets are stored in **plaintext**.
+
+**Build (alphaTrade side):** Nothing new in code — but the deployment **must** receive
+`DB_SECRETS_KEY` from compose (§4.2), or switch to `SECRETS_SOURCE=alphakey` to read from the
+alphaKey vault at runtime. For production, [[platform/COMPLIANCE]] requires `SECRETS_SOURCE=alphakey`.
+Verify the migration-safe fallback (plaintext rows written before encryption are returned as-is).
+
+**Acceptance:** With `DB_SECRETS_KEY` set, secret columns are ciphertext at rest and transparently
+decrypted on read. Aligns with [[services/alphaTest/Regression-Scenarios|V5]].
+
+---
+
+## 3. alphaGen — auth claim alignment + config docs — ✅ CLOSED (2026-06-14)
+
+> [!success] All items closed — alphaGen session 2026-06-14
+> Both items landed in one session. See alphaGen commit `32e7d36` (iss/aud verifier + contract tests)
+> and alphaDocs commit `26cb07d` (Config.md entries).
+
+**Driver:** [[services/alphaKey/alphaKey|alphaKey]] `iss`/`aud` claims; [[services/alphaFrame/alphaFrame|alphaFrame]]
+scoped MinIO accounts.
+
+### 3.1 JWT `iss` / `aud` validation — ✅ Done
+**Why:** alphaGen now requires Bearer JWT on all `/runs` routes via
+`att.security.alphakey_auth.require_auth`, verifying ES256 against alphaKey JWKS
+(see [[services/alphaGen/API]], [[services/alphaGen/Interactions]]). The documented verify path
+checks signature + `exp` but predates the new `iss`/`aud` claims.
+
+**Done:** Extended `verify_token` in `att.security.alphakey_auth` to validate `iss` and `aud` via
+PyJWT `issuer`/`audience` params. Configurable via `JWT_ISSUER`/`JWT_AUDIENCE` (default: `alphakey`).
+`Claims` dataclass gains `iss` and `aud` fields. Five new contract tests (valid, wrong-issuer,
+wrong-audience, missing-iss, env-override) all pass. `JWT_ISSUER`/`JWT_AUDIENCE` added to
+[[services/alphaGen/Config]].
+
+### 3.2 Document scoped MinIO credentials — ✅ Done
+**Why:** [[services/alphaFrame/alphaFrame|alphaFrame]] now creates a per-service MinIO user
+(`alphagen` → `models` bucket only) and injects `MINIO_ACCESS_KEY`/`MINIO_SECRET_KEY` into
+`alphagen-api`/`alphagen-worker`. [[services/alphaGen/Config]] does not document these variables.
+
+**Done:** `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` (scoped account, not MinIO root) added to
+[[services/alphaGen/Config]].
+
+---
+
+## 4. alphaFrame — compose plumbing — ✅ CLOSED (2026-06-14)
+
+> [!success] All items closed — alphaFrame session 2026-06-14
+> All compose wiring, container additions, observability config, and doc updates landed in one
+> session. See commit `8ae73c1` (alphaFrame) and `4650e95` / `7a74032` (alphaDocs).
+
+**Driver:** New features in alphaKey (password reset, MFA, key rotation, CORS, JWT claims),
+alphaGen (drift monitoring), and alphaTrade (at-rest secrets) required environment + container
+wiring that alphaFrame owns.
+
+### 4.1 SMTP env for alphaKey password reset — ✅ Done
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_TLS`,
+`PASSWORD_RESET_TTL` threaded to `alphakey-api` service in compose.
+
+### 4.2 `DB_SECRETS_KEY` for alphaTrade — ✅ Done
+`DB_SECRETS_KEY: ${DB_SECRETS_KEY:-}` injected into `alphatrade`. Documented in
+[[services/alphaFrame/Config]].
+
+### 4.3 Celery Beat for alphaGen drift monitoring — ✅ Done
+`alphagen-beat` container added (same image as worker, `celery -A att.api.worker beat`).
+All drift env vars (`DRIFT_ENABLED`, `DRIFT_PSI_THRESHOLD`, `DRIFT_KS_THRESHOLD`,
+`DRIFT_CHECK_INTERVAL_SECONDS`, `DRIFT_LOOKBACK_BARS`, `DRIFT_MIN_LIVE_BARS`,
+`RETRAIN_MAX_ATTEMPTS`, `RETRAIN_RETRY_DELAY_SECONDS`) threaded. Capped 0.5 CPU / 512M.
+
+### 4.4 Grafana panel + alert for drift gauges — ✅ Done
+`AlphaGenDriftPSI` (threshold 0.20) and `AlphaGenDriftKS` (threshold 0.10) Prometheus alert
+rules added (`severity: critical` → routes to Slack/PagerDuty). Drift timeseries panel added to
+`observability/grafana/dashboards/services.json`.
+
+### 4.5 Vault master-key rotation env naming — ✅ Done
+`VAULT_MASTER_KEY_1: ${VAULT_MASTER_KEY_1:-}` threaded to `alphakey-api`. Rotation runbook
+references `alphakey rotate-master-key` CLI per [[services/alphaKey/Config]].
+
+### 4.6 JWT issuer/audience + CORS passthrough — ✅ Done
+`JWT_ISSUER`, `JWT_AUDIENCE` threaded to `alphakey-api`, `alphagen-api`, `alphagen-worker`,
+`alphagen-beat`, and `alphatrade`. `ALPHAKEY_CORS_ORIGINS` threaded to `alphakey-api` (defaults
+empty — nginx fronts everything). `ALPHAKEY_URL`/`ALPHAKEY_SERVICE_TOKEN`/`SECRETS_SOURCE`
+also threaded to all consumers.
+
+### 4.7 Redis password consistency — ✅ Done
+All service Redis URLs confirmed authenticated (`redis://:${REDIS_PASSWORD}@redis:6379/N`).
+alphakey-api uses DB 2 to avoid collision with Celery broker/results (DBs 0/1).
+[[services/alphaKey/Config]], [[services/alphaGen/Config]], [[services/alphaTrade/Config]] all
+updated to show authenticated URL format.
+
+---
+
+## 5. alphaKey — outbound contract publication — ✅ CLOSED (2026-06-14)
+
+> [!success] Closed — documentation updated
+> Both items below are complete. No further backlog action for alphaKey outbound contract work.
+
+**Driver:** alphaKey is the **source** of most changes; its remaining cross-service duty is to make
+the contract unambiguous for consumers.
+
+- **Publish the JWT claim + JWKS contract — P2. ✅** Added a dedicated **JWT Consumer Contract**
+  section to [[services/alphaKey/Architecture]] covering: header (`kid`) vs payload claim table,
+  configurable `iss`/`aud` via `JWT_ISSUER`/`JWT_AUDIENCE`, and a numbered 8-step verification
+  sequence (JWKS lookup → ES256 verify → exp/iss/aud → Redis denylist by `jti` → `tv` check).
+  Also fixed the misleading JSON example that showed `kid` in the payload.
+- **Rotation runbook references CLI — P2. ✅** Updated [[services/alphaFrame/Config]] with a
+  **KEK Rotation** runbook section: 6-step procedure referencing `alphakey rotate-master-key`,
+  `--dry-run` pre-flight, idempotency note, and warning against premature key removal. Table entry
+  for `VAULT_MASTER_KEY_1` now names the CLI and explains monotonic versioning.
+
+---
+
+## 6. alphaTest / alphaPerf — new scenarios for the new features — ✅ CLOSED (2026-06-14)
+
+> [!success] Closed — documentation updated
+> Both catalogues now cover the new alphaKey auth features. No further backlog action for these two
+> services; the scenarios/benchmarks below are documented and await implementation in the alphaTest /
+> alphaPerf repos (no code exists in either yet — these are spec pages).
+
+**Driver:** The [[services/alphaTest/Regression-Scenarios|regression catalogue]] (2026-06-13) covered
+brute-force lockout (A10) and the auth chain, but **predated** the MFA, password-reset, and
+session-management features now in alphaKey.
+
+**Done (alphaTest):** Added to [[services/alphaTest/Regression-Scenarios]] §1:
+- **A12** — MFA/TOTP enrol (setup→verify) + login step-up (`401` + `X-TOTP-Required` without code;
+  success with code; wrong code rejected).
+- **A13** — MFA disable requires current code.
+- **A14** — password-reset happy path (forgot→email→reset→login; old password dead).
+- **A15** — reset-token security (single-use, TTL-bound, revokes all sessions, email non-enumeration,
+  `501` when SMTP off).
+- **A16** — active session list + revoke (platform-wide kill ~1s; current-session revoke degrades cleanly).
+- Plus golden artifacts (RFC 6238 TOTP vectors, mock SMTP sink) and priority-order entries.
+
+**Done (alphaPerf):** Added to [[services/alphaPerf/Performance-Test-Plan]]:
+- MFA-login budget row + a login-storm MFA variant + a **TOTP-verify micro-benchmark** (P2.4).
+- Explicit note that password-reset is not a perf target (SMTP-bound, low rps) — only guard that the
+  SMTP send stays off the request path.
+
+---
+
+## Quick index — priority across services
+
+| Priority | Items |
+|---|---|
+| **✅ Closed** | §1 all alphaLink items (2026-06-14) · §2.1 model.ready consumer (2026-06-14) · §2.2 alphaTrade iss/aud (2026-06-14) · §2.3 DB_SECRETS_KEY (2026-06-14) · §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) · §7 all contract/wiring gaps (2026-06-14) |
+| **Open** | None |
+
+---
+
+## 7. Contract + wiring gaps found by code audit — ✅ CLOSED (2026-06-14)
+
+> [!success] All 8 items closed — code audit session 2026-06-14
+> Code audit of all five service repos against the §1–§6 "closed" claims found 8 places where
+> one side of a cross-service seam was implemented but the counterpart was not. All fixed in one
+> session. See commits in alphaKey, alphaLink, alphaTrade, alphaFrame repos.
+
+### 7.1 `GET /auth/me` missing `totp_enabled` — ✅ Fixed (alphaKey)
+`UserResponse` did not include `totp_enabled`. alphaLink `MfaSection` read `me.totp_enabled` to drive
+all MFA state — always returned `undefined → false`. Added `totp_enabled: bool` to `UserResponse`
+and populated it from `user.totp_enabled`.
+
+### 7.2 MFA QR broken — field name mismatch — ✅ Fixed (alphaLink)
+`POST /auth/me/totp/setup` returns `{provisioning_uri, secret}`. alphaLink expected `qr_uri` and
+rendered it as `<img src>` — two bugs (wrong name + URI is not an image). Fixed: renamed type field
+to `provisioning_uri`; replaced `<img>` with a copyable setup-key block + `otpauth://` link.
+
+### 7.3 Admin gate: `developer` role blocked from admin UI — ✅ Fixed (alphaLink)
+Backend admin endpoints use `RequireDeveloper` (grants `developer` + `admin`). alphaLink hard-gated
+the admin page on `role === 'admin'` only — bootstrap developer locked out. Fixed gate to
+`role === 'admin' || role === 'developer'`.
+
+### 7.4 Admin user list missing `created_at` — ✅ Fixed (alphaKey)
+`GET /auth/admin/users` `UserSummary` omitted `created_at`. alphaLink rendered
+`new Date(u.created_at)` → "Invalid Date". Added `created_at: str` (ISO-8601) to `UserSummary`.
+
+### 7.5 Active sessions `is_current` always false — ✅ Fixed (alphaKey)
+`GET /auth/me/sessions` hardcoded `is_current=False` — cannot be determined without re-presenting
+the raw refresh token. Fixed by threading a `sid` (session ID) claim into the access JWT:
+refresh token is now created first on login/refresh; its DB ID is embedded as `sid` in the access
+token. `list_sessions` matches `current_user.session_id` against `rt.id`. See JWT Consumer
+Contract update in [[services/alphaKey/Architecture]].
+
+### 7.6 Per-model consensus gates silently dropped — ✅ Fixed (alphaTrade)
+alphaLink's model override editor sent `consensus_min_confidence`/`consensus_min_margin` per model
+to `PUT /models/{run_name}/overrides`, but `ModelOverrideUpdate`/`ModelOverrideResponse` and the
+`model_override` table had no such fields — values were silently ignored (global `BotSettings`
+fields only). Fixed: added both fields to `ModelOverrideUpdate`, `ModelOverrideResponse`,
+`ModelOverrideRecord` (migration 0027). Tick loop now applies per-model gate via `check_model_gate()`
+before `consensus_by_ticker` fusion; model excluded from fusion if its individual logit fails gate.
+
+### 7.7 alphaTrade JWT mode unreachable — ✅ Fixed (alphaTrade + alphaFrame)
+`make_jwt_dep` selected mode via `getattr(settings, "auth_mode", "legacy")` but `Settings` had no
+`auth_mode` field (`extra="ignore"`) and `AUTH_MODE` was not injected by compose. JWT path was
+permanently dead. Fixed: added `auth_mode: str = "legacy"` (bound to `AUTH_MODE`) to `Settings`;
+threaded `AUTH_MODE: ${AUTH_MODE:-jwt}` into the `alphatrade` compose service. Default is now `jwt`.
+
+### 7.8 alphaTrade API-key env var casing wrong — ✅ Fixed (alphaTrade + alphaFrame)
+Code read `alphaTrade_API_KEY` (mixed case). Linux env is case-sensitive; compose injected
+`ALPHATRADE_API_KEY` only into `alphalink` (unused there — alphaLink uses Bearer JWT). alphatrade
+service received no key → legacy mode failed closed. Fixed: standardised to `ALPHATRADE_API_KEY`
+throughout code and tests; injected into `alphatrade` service; removed from `alphalink` service.
+
+---
+
+## 8. alphaTest — dependency model Phase 2: private package registry
+
+> [!todo] Phase 2 (backlog — no registry infra yet)
+> **Phase 1** complete (2026-06-15): replaced `sys.path` filesystem coupling with explicit PEP 508
+> git-reference declarations in `alphaTest/pyproject.toml`; `repository_dispatch` wiring added to
+> alphaTrade, alphaKey, alphaLink CI; `ALPHATEST_DISPATCH_TOKEN` PAT and `SERVICE_TOKEN_SECRET`
+> secrets set in all repos. Bead: `alphaTest-nbf`.
+>
+> **⚠️ PAT renewal required before 2027-01-01.** `ALPHATEST_DISPATCH_TOKEN` expires then.
+> See [[services/alphaTest/alphaTest#CI Secrets & PAT]] for renewal steps.
+>
+> **Pending e2e verification (bead `alphaTest-7qi`):** full dispatch loop untested — GitHub Actions
+> minutes exhausted 2026-06-15. Test when minutes reset: create a PR on alphaTrade or alphaKey,
+> confirm `notify-alphatest` job fires and `alphatest-pr-gate` run appears in alphaTest Actions tab.
+>
+> **Phase 2** (this section) replaces the git refs with versioned wheels from a private package
+> registry once that infra is available. Track via bead `alphaTest-nbf`.
+
+### What needs doing (Phase 2)
+
+**Infra:**
+- Stand up a private PyPI registry (Artifactory, AWS CodeArtifact, or similar).
+- Configure CI in each sibling repo with publish credentials + `pip install --index-url` in alphaTest.
+
+**Per-sibling packaging work** (all three need identical treatment):
+
+| Service | Dist name | Import pkg | Issues |
+|---|---|---|---|
+| alphaTrade | `alphaTrade` | `alphaTrade` | Clean, consistent |
+| alphaKey | `alphakey` | `alphakey` | Dir named `alphaKey`, dist/import lowercase — note casing |
+| alphaGen | `alphaGen` | `att` | Import name diverges from dist; stale `algoTradingTrainer.egg-info` to delete |
+
+For each service:
+- Bump version off `0.1.0`; adopt semver going forward.
+- Add `LICENSE`, `[project].authors`, `[project].urls`, `readme` to `pyproject.toml`.
+- Add a `publish.yml` GitHub Actions workflow (`hatch build && twine upload` or `hatch publish`).
+- Consider splitting a lightweight `*-schemas` / `*-client` package containing only the types
+  alphaTest needs, so alphaTest does not pull `torch`, `ta-lib`, `onnxruntime`, or `optuna`.
+
+**alphaTest side (once registry exists):**
+```toml
+# pyproject.toml — replace [siblings] git refs with pinned versions
+dependencies = [
+    "alphatrade-client==1.2.0",
+    "alphakey-client==2.1.0",
+]
+```
+```yaml
+# CI — add private index
+pip install --index-url https://<registry>/simple '.[dev]'
+```
+
+### Constraint to preserve
+
+The **pr-gate** regression-guard property must survive Phase 2: the pr-gate workflow must still
+test the sibling's PR-HEAD code (not the pinned published version). Keep the git-ref-by-SHA
+install path in `pr-gate.yml` even after registry adoption — use the registry pin only for
+`post-merge`, `nightly`, `weekly`, and `manual`.
+
+### Acceptance criteria
+
+- [ ] alphaTest `pyproject.toml` `[dependencies]` pins versioned wheels from private registry (no git refs).
+- [ ] `pip install -e '.[dev]'` resolves without internet access to GitHub (only registry access).
+- [ ] `pr-gate.yml` still overrides with `git+https://...@${CALLER_SHA}` for the dispatching sibling.
+- [ ] All 30 tests collect and the contract suite (`make contract`) passes green.
+- [ ] `alphaGen`/`att` import-name divergence documented or resolved.
+
+See [[services/alphaTest/alphaTest]] · Bead: `alphaTest-nbf` · Priority: P3 (no blocking feature).
+
+---
+
+*Compiled 2026-06-14 from the 2026-06-06 → 2026-06-14 documentation diff. Update or close items as
+the owning service repos land the work. Cross-reference [[platform/Code-Review-2026-06-13]] for the
+originating bead IDs.*
