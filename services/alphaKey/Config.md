@@ -8,7 +8,7 @@ tags:
 
 # alphaKey — Config
 
-[[services/alphaKey/alphaKey|alphaKey]] · [[services/alphaKey/Architecture|Architecture]] · [[services/alphaKey/Interactions|Interactions]] · [[services/alphaKey/API|API]] · [[services/alphaKey/Data|Data]]
+[[alphaKey|alphaKey]] · [[alphaDocs/services/alphaKey/Architecture|Architecture]] · [[alphaDocs/services/alphaKey/Interactions|Interactions]] · [[alphaDocs/services/alphaKey/API|API]] · [[alphaDocs/services/alphaKey/Data|Data]]
 
 ---
 
@@ -41,6 +41,7 @@ Source: `alphaKey/.env.example`
 | `SMTP_PASSWORD` | `""` | ⬜ | SMTP auth password |
 | `SMTP_TLS` | `true` | ⬜ | Use STARTTLS |
 | `PASSWORD_RESET_TTL` | `3600` | ⬜ | Reset token lifetime in seconds (default 1 hour) |
+| `PACT_VERIFICATION_MODE` | `false` | ⬜ | **Test-only.** When `true`, mounts the gated `POST /internal/pact-state` endpoint used by Pact provider verification (seeds login/JWKS/token-version/secrets states). **Must be `false` in all non-CI environments.** Set to `true` only in the `pact-verify` CI job. |
 
 ---
 

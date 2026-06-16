@@ -8,7 +8,7 @@ tags:
 
 # alphaTrade — Config
 
-[[services/alphaTrade/alphaTrade|alphaTrade]] · [[services/alphaTrade/Architecture|Architecture]] · [[services/alphaTrade/Interactions|Interactions]] · [[services/alphaTrade/API|API]] · [[services/alphaTrade/Data|Data]]
+[[alphaTrade|alphaTrade]] · [[alphaDocs/services/alphaTrade/Architecture|Architecture]] · [[alphaDocs/services/alphaTrade/Interactions|Interactions]] · [[alphaDocs/services/alphaTrade/API|API]] · [[alphaDocs/services/alphaTrade/Data|Data]]
 
 ---
 
@@ -59,6 +59,7 @@ Source: `alphaTrade/.env.example`
 | `WEBHOOK_URL` | — | ⬜ | Generic webhook URL for alerts |
 | `WEBHOOK_LEVEL` | `WARNING` | ⬜ | Minimum alert level for generic webhook |
 | `AUTH_MODE` | `jwt` | ⬜ | `jwt` = require alphaKey Bearer JWT on all API endpoints (platform default); `legacy` = X-API-Key header auth |
+| `PACT_VERIFICATION_MODE` | `false` | ⬜ | **Test-only.** When `true`, mounts the gated `POST /internal/pact-state` endpoint used by Pact provider verification (seeds/clears in-memory MLflow registry state and kill-switch sentinel). **Must be `false` in all non-CI environments** — the endpoint can flip the kill switch. Set to `true` only in the `pact-verify` CI job. |
 | `ALPHATRADE_API_KEY` | — | ⬜ | API key used in `legacy` auth mode; if unset in legacy mode, requests are blocked (fail-closed) unless `ALPHATRADE_INSECURE_NO_AUTH=true` |
 | `ALPHATRADE_INSECURE_NO_AUTH` | `false` | ⬜ | Set to `true` to allow unauthenticated access when no API key configured (local dev only — never in production) |
 | `SECRETS_SOURCE` | `db` | ⬜ | `db` = secrets in DB columns (see `DB_SECRETS_KEY`); `alphakey` = fetch from alphaKey vault at runtime |

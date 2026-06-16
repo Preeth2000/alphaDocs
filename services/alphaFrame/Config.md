@@ -8,7 +8,7 @@ tags:
 
 # alphaFrame — Config
 
-[[services/alphaFrame/alphaFrame|alphaFrame]] · [[services/alphaFrame/Architecture|Architecture]] · [[services/alphaFrame/Interactions|Interactions]] · [[services/alphaFrame/API|API]] · [[services/alphaFrame/Data|Data]]
+[[alphaFrame|alphaFrame]] · [[alphaDocs/services/alphaFrame/Architecture|Architecture]] · [[alphaDocs/services/alphaFrame/Interactions|Interactions]] · [[alphaDocs/services/alphaFrame/API|API]] · [[alphaDocs/services/alphaFrame/Data|Data]]
 
 ---
 
@@ -57,6 +57,8 @@ Source: `alphaFrame/.env.example` → copy to `.env`
 | `DB_SECRETS_KEY` | — | ⬜ | Fernet key for at-rest encryption of alphaTrade BotSettings secret columns. Generate: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` |
 | `AUTH_MODE` | `jwt` | ⬜ | `jwt` (alphaKey Bearer JWT required — platform default) or `legacy` (X-API-Key) |
 | `ALPHATRADE_API_KEY` | — | ⬜ | API key for alphaTrade in `legacy` auth mode. Not needed when `AUTH_MODE=jwt`. |
+| `PACT_BROKER_BASIC_AUTH_USERNAME` | `pactadmin` | ⬜ | Basic auth username for the local-only Pact Broker (`:9292`). Not wired into CI — local dev only. |
+| `PACT_BROKER_BASIC_AUTH_PASSWORD` | `changeme` | ⬜ | Basic auth password for the local-only Pact Broker. |
 
 ---
 
@@ -213,7 +215,7 @@ GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
 
 ## KEK Rotation
 
-Full procedure is in [[services/alphaKey/Config#Vault Key Rotation]]. alphaFrame's role is env wiring:
+Full procedure is in [[alphaDocs/services/alphaKey/Config#Vault Key Rotation]]. alphaFrame's role is env wiring:
 
 1. Generate new key: `python -c "import base64,secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"`
 2. In `.env`: set `VAULT_MASTER_KEY_1` = current `VAULT_MASTER_KEY`, then set `VAULT_MASTER_KEY` = new key
