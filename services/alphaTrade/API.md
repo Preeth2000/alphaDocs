@@ -40,7 +40,7 @@ tags:
 | `GET` | `/models/{run_name}/overrides` | Single model overrides (or defaults if not set) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 0 |
 | `PUT` | `/models/{run_name}/overrides` | Update model override (enabled, sizing, retirement, `consensus_min_confidence`, `consensus_min_margin`, etc.) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 (UPSERT) |
 | `DELETE` | `/models/{run_name}/overrides` | Delete overrides (revert to defaults) | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 1 |
-| `GET` | `/models/deployments` | Latest deployment per model | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 0 |
+| `GET` | `/models/deployments` | Latest deployment per model. `failure_msg` redacted (null) unless caller role is `developer`/`admin`; legacy/API-key mode (no role) fails closed | [[services/alphaLink/alphaLink\|alphaLink]] | 1 | 0 |
 | `GET` | `/models/registry` | MLflow registered models (name, versions, aliases) | [[services/alphaLink/alphaLink\|alphaLink]] | 0 | 0 (MLflow call) |
 | `POST` | `/models/{model_name}/promote` | Move MLflow version to production | [[services/alphaLink/alphaLink\|alphaLink]] | 0 | 1 (MLflow + INSERT deployment) |
 | `POST` | `/models/{model_name}/demote` | Move production → staging | [[services/alphaLink/alphaLink\|alphaLink]] | 0 | 0 (MLflow call) |

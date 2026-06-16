@@ -4,7 +4,7 @@ tags:
   - platform
   - backlog
   - cross-service
-last-reviewed: 2026-06-14
+last-reviewed: 2026-06-16
 ---
 
 # Cross-Service Backlog — Follow-On Work From 2026-06-06 → 2026-06-14 Doc Changes
@@ -397,8 +397,8 @@ session-management features now in alphaKey.
 
 | Priority | Items |
 |---|---|
-| **✅ Closed** | §1 all alphaLink items (2026-06-14) · §2.1 model.ready consumer (2026-06-14) · §2.2 alphaTrade iss/aud (2026-06-14) · §2.3 DB_SECRETS_KEY (2026-06-14) · §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) · §7 all contract/wiring gaps (2026-06-14) |
-| **Open** | None |
+| **✅ Closed** | §1 all alphaLink items (2026-06-14) · §2.1 model.ready consumer (2026-06-14) · §2.2 alphaTrade iss/aud (2026-06-14) · §2.3 DB_SECRETS_KEY (2026-06-14) · §3 alphaGen iss/aud + MinIO creds docs (2026-06-14) · §4 all alphaFrame wiring (2026-06-14) · §5 alphaKey contract publication (2026-06-14) · §6 alphaTest/alphaPerf scenarios (2026-06-14) · §7 all contract/wiring gaps (2026-06-14) · §9 alphaTrade failure_msg redaction (2026-06-16) |
+| **Open** | §8 alphaTest dependency model Phase 2 — private package registry (P3, no infra yet) |
 
 ---
 
@@ -528,6 +528,68 @@ See [[services/alphaTest/alphaTest]] · Bead: `alphaTest-nbf` · Priority: P3 (n
 
 ---
 
-*Compiled 2026-06-14 from the 2026-06-06 → 2026-06-14 documentation diff. Update or close items as
-the owning service repos land the work. Cross-reference [[platform/Code-Review-2026-06-13]] for the
-originating bead IDs.*
+## 9. alphaTrade — redact deployment `failure_msg` by role — ✅ CLOSED (2026-06-16)
+
+> [!success] Done — alphaTrade session 2026-06-16
+> `list_deployments` (`api/routers/models.py:498-518`) now nulls `failure_msg` unless
+> `request.state.role` is `developer`/`admin`; `failed_at` stays visible. Legacy/API-key mode
+> (role unset) fails closed. 4 new tests in `tests/unit/test_api_model_deployments_redaction.py`,
+> full unit suite green. Bead `alphatrade-a0p`, commit `c6826fbb8`.
+>
+> `POST /models/{model_name}/retry-deploy` (`models.py:581-606`) was audited — it never echoes
+> `failure_msg` or MLflow error text to the caller in current code, so no change was needed there.
+>
+> Filed 2026-06-15 alongside the alphaLink model-page consolidation
+> (registry + published merged into [[services/alphaLink/alphaLink|alphaLink]]
+> `/trade/models/registry`).
+
+**Driver:** alphaLink's consolidated model page now shows deployment failure detail in a
+role-gated drawer (`ModelDeploymentDrawer`) — developer/admin see the raw error, standard users
+see a friendly fallback. That gate is **client-side UX only, not a security boundary**: the
+backend still returns the raw `failure_msg` to every caller regardless of role. The gate should
+be enforced server-side too, since `failure_msg` can contain infra detail (MLflow paths, internal
+hostnames) that shouldn't reach standard accounts.
+
+**Why this is a small, contained change:** alphaTrade already has everything it needs —
+no alphaKey change required.
+- `GET /models/deployments` is owned by alphaTrade:
+  `alphaTrade/api/routers/models.py:498-517` (`list_deployments`),
+  `response_model=list[ModelDeploymentResponse]`.
+- `ModelDeploymentResponse` (`models.py:124-130`) already carries `failure_msg: Optional[str]`
+  and `failed_at` alongside `run_name`, `status`, `promoted_at`, `activated_at`.
+- The caller's role is **already available** on the request: `make_jwt_dep`
+  (`alphaTrade/api/auth.py:78-79`) sets `request.state.role` from the JWT `role` claim, which
+  alphaKey already mints (`alphakey/security/tokens.py:66-78`, claim values
+  `admin` / `developer` / `standard`).
+
+**Build (alphaTrade only):**
+- In `list_deployments` (`api/routers/models.py:499`), when
+  `getattr(request.state, "role", None) not in ("developer", "admin")`, null out `failure_msg`
+  (and `failed_at`, if that's also considered sensitive — recommend keeping `failed_at` visible,
+  only redact `failure_msg`) before serializing the response.
+- Apply the same redaction to any error text echoed by `POST /models/{model_name}/retry-deploy`
+  (`models.py:581-612`) for non-privileged callers.
+- **Fail-closed caveat:** in `auth_mode=legacy`/API-key mode, `request.state.role` is never set
+  (`getattr(..., None)` → `None`), which is correctly treated as non-privileged by the check
+  above — verify this path is exercised by a test, not just the JWT-mode path.
+
+**Contract:**
+| Caller role | `GET /models/deployments` → `failure_msg` |
+|---|---|
+| `admin` / `developer` | unchanged (raw string) |
+| `standard` | `null` |
+| legacy/API-key (no role) | `null` (fail closed) |
+
+**Acceptance:** A `standard`-role JWT calling `GET /models/deployments` never receives a non-null
+`failure_msg` for any deployment, even when one is recorded server-side; a `developer`/`admin`
+JWT receives it unchanged. Add a contract test alongside the existing `iss`/`aud` tests in
+alphaTrade. Consider a new [[services/alphaTest/Regression-Scenarios]] entry once this lands.
+
+---
+
+*Compiled 2026-06-14 from the 2026-06-06 → 2026-06-14 documentation diff. Updated 2026-06-15 with
+§9 (alphaTrade failure_msg redaction, filed from the alphaLink model-page consolidation work).
+Updated 2026-06-16: §9 closed (bead `alphatrade-a0p`, commit `c6826fbb8`). Only remaining open
+item is §8 (alphaTest registry Phase 2, P3, bead `alphaTest-nbf`).
+Update or close items as the owning service repos land the work. Cross-reference
+[[platform/Code-Review-2026-06-13]] for the originating bead IDs.*
