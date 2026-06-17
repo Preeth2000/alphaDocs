@@ -1,20 +1,16 @@
----
-title: projectAlpha — Documentation Vault
-description: Map of Content for the entire alphaPlatform trading system
-tags:
-  - moc
-  - home
-last-reviewed: 2026-06-06
----
-
 # projectAlpha Documentation Vault
 
-> Algorithmic trading platform — canonical reference documentation.  
-> **Open as an Obsidian vault**: `File → Open Folder as Vault → alphaDocs/`
+> projectAlpha canonical reference documentation.  
+> **For best usage, open as an Obsidian vault**: `File → Open Folder as Vault → alphaDocs/`
 
 ---
+<br>
 
-## Platform Overview
+# Platform Overview
+
+[[README]] · [[platform/Features]] · [[platform/Tech-Stack]] · [[platform/Key-Decisions]]
+
+> projectAlpha is an automated algorithmic trading platform — ML models trained on price data are validated, published, and executed live against Trading 212.
 
 | | |
 |---|---|
@@ -24,20 +20,6 @@ last-reviewed: 2026-06-06
 | **Infra host** | [[alphaFrame\|alphaFrame]] (Docker Compose) |
 
 → [[platform/Overview]] for the full system map + global Mermaid diagram.
-
----
-
-## Services
-
-| Service | Status | Purpose | Port |
-|---|---|---|---|
-| [[alphaFrame\|alphaFrame]] | 🟢 Full | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
-| [[alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
-| [[alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — broker, risk, scheduler, consensus | 8001 |
-| [[alphaLink\|alphaLink]] | 🟢 Full | Frontend UI — Next.js + BFF proxy | 3000 |
-| [[alphaKey\|alphaKey]] | 🟡 Partial | Auth & account management | 8000 |
-| [[alphaTest\|alphaTest]] | ⬜ Planned | Regression testing suite | TBD |
-| [[alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing suite | TBD |
 
 ---
 
@@ -52,77 +34,17 @@ last-reviewed: 2026-06-06
 
 ---
 
-## ToDo
+## Services
 
-Not-yet-done cross-service work and long-term tasks. See [[ToDo]].
-
-| Page | Contents |
-|---|---|
-| [[ToDo/Cross-Service-Backlog]] | Open cross-service obligations + known unfixed races/bugs |
-| [[ToDo/Compliance]] | Open compliance items (T212 ToS, FCA perimeter, GDPR, production secrets) |
-
----
-
-## Reference
-
-| Page | Contents |
-|---|---|
-| [[reference/Glossary]] | Domain terms: run, manifest, gate, OCO, consensus, etc. |
-| [[reference/Ports-and-Endpoints]] | Port map for all services and infrastructure |
-| [[reference/Event-Channels]] | Redis pub/sub + SSE channels and their consumers |
-
----
-
-## Templates
-
-| Template | Use |
-|---|---|
-| [[_templates/service-template]] | Hub note for a new service |
-| [[_templates/Architecture-template]] | Architecture sub-page |
-| [[_templates/Interactions-template]] | Interactions sub-page |
-| [[_templates/API-template]] | API sub-page |
-| [[_templates/Data-template]] | Data sub-page |
-| [[_templates/Config-template]] | Config sub-page |
-
-> [!tip] Adding a new service
-> 1. Create `services/<ServiceName>/` folder
-> 2. Copy each template; replace `{{placeholders}}`
-> 3. Add entry to this README table
-> 4. Add node to [[platform/Overview]] Mermaid diagram
-> 5. Update [[reference/Ports-and-Endpoints]] and [[platform/Tech-Stack]]
-
----
-
-## Update Policy
-
-These docs are **living documentation** — update them when:
-- New API endpoint added/removed
-- New env var added
-- DB schema changed (migration added)
-- New service dependency wired
-- Override chain / config logic changes
-- New service spun up
-
-*Last reviewed: 2026-06-06*
-
-
----
-
-## Project overview (excerpt)
-
----
-page: Overview
-tags:
-  - platform
-  - overview
-last-reviewed: 2026-06-06
----
-
-# Platform Overview
-
-[[README]] · [[platform/Features]] · [[platform/Tech-Stack]] · [[platform/Key-Decisions]]
-
-> projectAlpha is an automated algorithmic trading platform — ML models trained on price data are validated, published, and executed live against Trading 212.
+| Service  | Purpose | Port |
+|---|---|---|
+| [[alphaFrame\|alphaFrame]] | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
+| [[alphaGen\|alphaGen]] | ML model generation — train, validate, backtest, publish | 8000 |
+| [[alphaTrade\|alphaTrade]]  | Trading executor — broker, risk, scheduler, consensus | 8001 |
+| [[alphaLink\|alphaLink]] | Frontend UI — Next.js + BFF proxy | 3000 |
+| [[alphaKey\|alphaKey]] | Auth & account management | 8000 |
+| [[alphaTest\|alphaTest]] | Regression testing suite | TBD |
+| [[alphaPerf\|alphaPerf]] | Performance testing suite | TBD |
 
 ---
 
@@ -184,20 +106,6 @@ flowchart TD
     TR_BROKER --> T212
     TR_SCHED --> YF
 ```
-
----
-
-## Services
-
-| Service | Status | Role | Port |
-|---|---|---|---|
-| [[alphaFrame\|alphaFrame]] | 🟢 Full | Shared infrastructure — Postgres, Redis, MinIO, MLflow, Nginx, Observability | multiple |
-| [[alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
-| [[alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — scheduler, inference, risk, orders | 8081/8080/9090 |
-| [[alphaLink\|alphaLink]] | 🟢 Full | Frontend + BFF — Next.js UI + proxy | 3000 |
-| [[alphaKey\|alphaKey]] | 🟡 Partial | Auth + credential vault — JWT, Argon2, Fernet | 8000 |
-| [[alphaTest\|alphaTest]] | ⬜ Planned | Regression testing | TBD |
-| [[alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing | TBD |
 
 ---
 
@@ -266,26 +174,68 @@ sequenceDiagram
 
 See [[platform/Key-Decisions]] for why these patterns were chosen.
 
----
 
+---
 ## Deployment
 
+1. Download all repos to parent directory.
+2. From service alphaFrame, run ```docker compose --build```
 
+---
+
+## ToDo
+
+Not-yet-done cross-service work and long-term tasks. See [[ToDo]].
+
+| Page | Contents |
+|---|---|
+| [[ToDo/Cross-Service-Backlog]] | Open cross-service obligations + known unfixed races/bugs |
+| [[ToDo/Compliance]] | Open compliance items (T212 ToS, FCA perimeter, GDPR, production secrets) |
 
 ---
 
-## Repository structure
+## Templates
 
- - README.md.bak-20260617222059
- - README.md.new
- - README.obsidian.md
- - ToDo
- - _templates
- - platform
- - reference
- - services
+| Template | Use |
+|---|---|
+| [[_templates/service-template]] | Hub note for a new service |
+| [[_templates/Architecture-template]] | Architecture sub-page |
+| [[_templates/Interactions-template]] | Interactions sub-page |
+| [[_templates/API-template]] | API sub-page |
+| [[_templates/Data-template]] | Data sub-page |
+| [[_templates/Config-template]] | Config sub-page |
+
+> [!tip] Adding a new service
+> 1. Create `services/<ServiceName>/` folder
+> 2. Copy each template; replace `{{placeholders}}`
+> 3. Add entry to this README table
+> 4. Add node to [[platform/Overview]] Mermaid diagram
+> 5. Update [[reference/Ports-and-Endpoints]] and [[platform/Tech-Stack]]
 
 ---
+
+## Update Policy
+
+These docs are **living documentation** — update them when:
+- New API endpoint added/removed
+- New env var added
+- DB schema changed (migration added)
+- New service dependency wired
+- Override chain / config logic changes
+- New service spun up
+
+*Last reviewed: 2026-06-06*
+
+
+
+## Reference
+
+| Page | Contents |
+|---|---|
+| [[reference/Glossary]] | Domain terms: run, manifest, gate, OCO, consensus, etc. |
+| [[reference/Ports-and-Endpoints]] | Port map for all services and infrastructure |
+| [[reference/Event-Channels]] | Redis pub/sub + SSE channels and their consumers |
+
 
 ## Contributing
 If you'd like to contribute changes to the docs, open a PR against the `main` branch. Keep docs in Markdown and follow existing templates in `_templates/`.
