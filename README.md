@@ -1,87 +1,297 @@
-# alphaDocs
+---
+title: projectAlpha — Documentation Vault
+description: Map of Content for the entire alphaPlatform trading system
+tags:
+  - moc
+  - home
+last-reviewed: 2026-06-06
+---
 
-> Documentation vault for the projectAlpha trading platform. Single source of truth for all service architecture, APIs, configuration, and data models.
+# projectAlpha Documentation Vault
 
-**Format:** Obsidian markdown vault · **Repo:** `projectAlpha/alphaDocs/`
-
-> **Note:** `alphaDocs/` is a symlink to an external Obsidian vault. The git-tracked content lives inside `alphaDocs/alphaDocs/`. Open that folder in [Obsidian](https://obsidian.md) for full graph/link navigation, or browse the markdown files directly on GitHub.
+> Algorithmic trading platform — canonical reference documentation.  
+> **Open as an Obsidian vault**: `File → Open Folder as Vault → alphaDocs/`
 
 ---
 
-## What it is
+## Platform Overview
 
-alphaDocs is the living technical documentation for projectAlpha — a self-hosted ML trading platform. It documents every service's architecture, API endpoints, configuration, data models, and cross-service interactions. The root READMEs in each service directory (`alphaGen/README.md`, etc.) are derived from this vault.
+| | |
+|---|---|
+| **Goal** | Automated ML-driven trading across multiple instruments |
+| **Architecture** | Microservices — each service is an independent repo |
+| **Communication** | REST · SSE · Redis pub/sub · Celery task queue |
+| **Infra host** | [[alphaFrame\|alphaFrame]] (Docker Compose) |
+
+→ [[platform/Overview]] for the full system map + global Mermaid diagram.
 
 ---
 
-## Vault structure
+## Services
 
-```
-alphaDocs/alphaDocs/
-├── README.md                        # This file / vault map-of-content
-├── platform/
-│   ├── Overview.md                  # System map, data flow diagrams (Mermaid)
-│   ├── Features.md
-│   ├── Tech-Stack.md                # Versioned dependency inventory per service
-│   └── Key-Decisions.md             # Architecture decision records
-├── reference/
-│   ├── Ports-and-Endpoints.md       # Complete port map, Nginx routes, DBs, buckets
-│   ├── Event-Channels.md            # Redis pub/sub + SSE channel catalogue
-│   └── Glossary.md                  # Domain terms (run, manifest, gate, consensus...)
-├── services/
-│   ├── alphaFrame/                  # 6-page set: hub + Architecture/Interactions/API/Data/Config
-│   ├── alphaGen/
-│   ├── alphaKey/
-│   ├── alphaLink/
-│   ├── alphaTrade/
-│   ├── alphaTest/
-│   └── alphaPerf/
-├── _templates/
-│   ├── README-template.md           # GitHub root README template (fill + drop N/A sections)
-│   ├── service-template.md          # Obsidian hub note template
-│   ├── API-template.md
-│   ├── Architecture-template.md
-│   ├── Config-template.md
-│   ├── Data-template.md
-│   └── Interactions-template.md
-└── ToDo/
-    ├── Cross-Service-Backlog.md
-    └── Compliance.md
-```
+| Service | Status | Purpose | Port |
+|---|---|---|---|
+| [[alphaFrame\|alphaFrame]] | 🟢 Full | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
+| [[alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
+| [[alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — broker, risk, scheduler, consensus | 8001 |
+| [[alphaLink\|alphaLink]] | 🟢 Full | Frontend UI — Next.js + BFF proxy | 3000 |
+| [[alphaKey\|alphaKey]] | 🟡 Partial | Auth & account management | 8000 |
+| [[alphaTest\|alphaTest]] | ⬜ Planned | Regression testing suite | TBD |
+| [[alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing suite | TBD |
 
-Each service folder under `services/` follows the same 6-page split:
+---
+
+## Platform-Wide Docs
 
 | Page | Contents |
 |---|---|
-| `<Service>.md` | Hub — one-line purpose, Mermaid flow, links to sub-pages |
-| `Architecture.md` | Modules, primary flow sequences, design decisions |
-| `Interactions.md` | Upstream inputs, downstream outputs, cross-service auth |
-| `API.md` | All endpoints exposed + outbound calls made |
-| `Data.md` | Datastores, table schemas, read/write counts per operation |
-| `Config.md` | Env vars, config files, override priority chain |
+| [[platform/Overview]] | System map, global data flow, Mermaid architecture diagram |
+| [[platform/Features]] | All platform features grouped by domain |
+| [[platform/Tech-Stack]] | Full tech stack per service + shared infra |
+| [[platform/Key-Decisions]] | Architecture decision records (comms, security, scaling, observability) |
 
 ---
 
-## How to use
+## ToDo
 
-**Obsidian (recommended):** Open `alphaDocs/alphaDocs/` as a vault. Wikilinks, graph view, and Mermaid diagrams render natively.
+Not-yet-done cross-service work and long-term tasks. See [[ToDo]].
 
-**GitHub / plain markdown:** All files are standard markdown. Mermaid diagrams render in GitHub's markdown preview. Wikilinks (`[[...]]`) appear as-is but the linked files are reachable by path.
-
-**Starting points:**
-- [`platform/Overview.md`](alphaDocs/platform/Overview.md) — full system diagram and primary data flows
-- [`reference/Ports-and-Endpoints.md`](alphaDocs/reference/Ports-and-Endpoints.md) — all ports, Nginx routes, databases, buckets
-- [`reference/Event-Channels.md`](alphaDocs/reference/Event-Channels.md) — Redis pub/sub and SSE channels
+| Page | Contents |
+|---|---|
+| [[ToDo/Cross-Service-Backlog]] | Open cross-service obligations + known unfixed races/bugs |
+| [[ToDo/Compliance]] | Open compliance items (T212 ToS, FCA perimeter, GDPR, production secrets) |
 
 ---
 
-## Related services
+## Reference
 
-| Service | README | Purpose |
+| Page | Contents |
+|---|---|
+| [[reference/Glossary]] | Domain terms: run, manifest, gate, OCO, consensus, etc. |
+| [[reference/Ports-and-Endpoints]] | Port map for all services and infrastructure |
+| [[reference/Event-Channels]] | Redis pub/sub + SSE channels and their consumers |
+
+---
+
+## Templates
+
+| Template | Use |
+|---|---|
+| [[_templates/service-template]] | Hub note for a new service |
+| [[_templates/Architecture-template]] | Architecture sub-page |
+| [[_templates/Interactions-template]] | Interactions sub-page |
+| [[_templates/API-template]] | API sub-page |
+| [[_templates/Data-template]] | Data sub-page |
+| [[_templates/Config-template]] | Config sub-page |
+
+> [!tip] Adding a new service
+> 1. Create `services/<ServiceName>/` folder
+> 2. Copy each template; replace `{{placeholders}}`
+> 3. Add entry to this README table
+> 4. Add node to [[platform/Overview]] Mermaid diagram
+> 5. Update [[reference/Ports-and-Endpoints]] and [[platform/Tech-Stack]]
+
+---
+
+## Update Policy
+
+These docs are **living documentation** — update them when:
+- New API endpoint added/removed
+- New env var added
+- DB schema changed (migration added)
+- New service dependency wired
+- Override chain / config logic changes
+- New service spun up
+
+*Last reviewed: 2026-06-06*
+
+
+---
+
+## Project overview (excerpt)
+
+---
+page: Overview
+tags:
+  - platform
+  - overview
+last-reviewed: 2026-06-06
+---
+
+# Platform Overview
+
+[[README]] · [[platform/Features]] · [[platform/Tech-Stack]] · [[platform/Key-Decisions]]
+
+> projectAlpha is an automated algorithmic trading platform — ML models trained on price data are validated, published, and executed live against Trading 212.
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Browser["Browser"]
+        UI[alphaLink :3000]
+    end
+
+    subgraph Frame["alphaFrame (shared infra)"]
+        NGINX[Nginx :443]
+        PG[(PostgreSQL :5432)]
+        RD[(Redis :6379)]
+        MN[(MinIO :9000)]
+        ML[MLflow :5000]
+        OBS[Observability\nGrafana/Prometheus/Loki/Tempo]
+    end
+
+    subgraph Gen["alphaGen :8000"]
+        GEN_API[FastAPI]
+        GEN_WORK[Celery Worker]
+        ATT["att library\n(train/validate/export/publish)"]
+    end
+
+    subgraph Trade["alphaTrade :8081"]
+        TR_API[FastAPI]
+        TR_SCHED[BarClose Scheduler]
+        TR_INF[ONNX Inference]
+        TR_RISK[Risk Gates]
+        TR_BROKER[T212Client]
+    end
+
+    subgraph Key["alphaKey :8000"]
+        AK_AUTH[Auth / JWT]
+        AK_VAULT[Credential Vault]
+    end
+
+    subgraph External["External"]
+        T212[Trading 212 API]
+        YF[yfinance / Polygon.io]
+    end
+
+    Browser --> NGINX
+    NGINX --> Gen & Trade & Key
+    UI -->|BFF| Gen & Trade & Key
+
+    Gen & Trade & Key --> PG & RD
+    Gen & Trade --> MN & ML
+    Gen & Trade & Key --> OBS
+
+    GEN_API --> GEN_WORK --> ATT
+    ATT -->|model.onnx + manifest.json| MN
+    MN -->|model sync| TR_SCHED
+    RD -->|model.ready pub/sub| TR_API
+
+    TR_SCHED --> TR_INF --> TR_RISK --> TR_BROKER
+    TR_BROKER --> T212
+    TR_SCHED --> YF
+```
+
+---
+
+## Services
+
+| Service | Status | Role | Port |
+|---|---|---|---|
+| [[alphaFrame\|alphaFrame]] | 🟢 Full | Shared infrastructure — Postgres, Redis, MinIO, MLflow, Nginx, Observability | multiple |
+| [[alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
+| [[alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — scheduler, inference, risk, orders | 8081/8080/9090 |
+| [[alphaLink\|alphaLink]] | 🟢 Full | Frontend + BFF — Next.js UI + proxy | 3000 |
+| [[alphaKey\|alphaKey]] | 🟡 Partial | Auth + credential vault — JWT, Argon2, Fernet | 8000 |
+| [[alphaTest\|alphaTest]] | ⬜ Planned | Regression testing | TBD |
+| [[alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing | TBD |
+
+---
+
+## Primary Data Flows
+
+### 1. Model Training → Publishing
+
+```mermaid
+sequenceDiagram
+    participant U as User (alphaLink)
+    participant AG as alphaGen
+    participant RD as Redis
+    participant ML as MLflow
+    participant MN as MinIO
+    participant AT as alphaTrade
+
+    U->>AG: POST /runs {config_yaml}
+    AG->>RD: enqueue Celery task
+    AG-->>U: 202 {run_id}
+    U->>AG: GET /runs/{id}/log (SSE)
+    RD-->>AG: stream log lines
+    AG-->>U: SSE log events
+    AG->>ML: log params + metrics
+    AG->>MN: model.onnx + manifest.json
+    AG->>RD: publish model.ready
+    RD-->>AT: model.ready event
+    AT->>MN: download model.onnx + manifest.json
+    Note over AT: model hot-swapped into registry
+```
+
+### 2. Live Trading Tick
+
+```mermaid
+sequenceDiagram
+    participant SCHED as BarCloseScheduler
+    participant DATA as Data Provider
+    participant INF as ONNX Inference
+    participant RISK as Risk Gates
+    participant T212 as Trading 212
+    participant DB as Database
+
+    Note over SCHED: NYSE bar close fires
+    SCHED->>DATA: fetch OHLCV (warmup bars)
+    DATA->>SCHED: DataFrame
+    SCHED->>INF: compute features → window → inference
+    INF->>RISK: logits per model → consensus signal
+    RISK->>DB: check halt / cooldown / positions
+    RISK->>T212: place market order (if approved)
+    T212-->>DB: order fill → TradeJournal
+```
+
+---
+
+## Communication Patterns
+
+| Pattern | Used between | Purpose |
 |---|---|---|
-| [alphaFrame](../alphaFrame) | [README](../alphaFrame/README.md) | Shared infra (Postgres, Redis, MinIO, Nginx, observability) |
-| [alphaGen](../alphaGen) | [README](../alphaGen/README.md) | ML model trainer — outputs ONNX + manifest |
-| [alphaKey](../alphaKey) | [README](../alphaKey/README.md) | Auth, JWT, encrypted credential vault |
-| [alphaLink](../alphaLink) | [README](../alphaLink/README.md) | Web UI and BFF proxy |
-| [alphaTrade](../alphaTrade) | [README](../alphaTrade/README.md) | Live trading bot |
-| [alphaTest](../alphaTest) | [README](../alphaTest/README.md) | Cross-service regression + contract tests |
+| REST (HTTP/JSON) | alphaLink ↔ alphaGen, alphaTrade, alphaKey | Synchronous operations |
+| SSE (Server-Sent Events) | alphaGen → alphaLink (logs + model.ready) | Real-time streaming |
+| SSE | alphaTrade → alphaLink (tick events, fills) | Live dashboard |
+| Redis pub/sub | alphaGen worker → alphaTrade | model.ready notification |
+| Celery (Redis broker) | alphaGen API → Celery worker | Async training job dispatch |
+| S3 API (MinIO) | alphaGen write, alphaTrade read | Model artifact transfer |
+| MLflow SDK | alphaGen write, alphaTrade read | Model registry |
+| OTLP gRPC | All services → OTel Collector | Distributed traces + metrics |
+
+See [[platform/Key-Decisions]] for why these patterns were chosen.
+
+---
+
+## Deployment
+
+
+
+---
+
+## Repository structure
+
+ - README.md.bak-20260617222059
+ - README.md.new
+ - README.obsidian.md
+ - ToDo
+ - _templates
+ - platform
+ - reference
+ - services
+
+---
+
+## Contributing
+If you'd like to contribute changes to the docs, open a PR against the `main` branch. Keep docs in Markdown and follow existing templates in `_templates/`.
+
+## Notes about Obsidian
+This repository also stores an Obsidian vault. The vault-friendly README is preserved as `README.obsidian.md` for local editing (backlinks, transclusions). `README.md` is intended for GitHub rendering.
+
+## License
+See the LICENSE file in the repository root if present.
