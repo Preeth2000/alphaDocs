@@ -4,7 +4,6 @@
 > **For best usage, open as an Obsidian vault**: `File → Open Folder as Vault → alphaDocs/`
 
 ---
-<br>
 
 # Platform Overview
 
@@ -38,13 +37,13 @@
 
 | Service  | Purpose | Port |
 |---|---|---|
-| [[alphaFrame\|alphaFrame]] | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
-| [[alphaGen\|alphaGen]] | ML model generation — train, validate, backtest, publish | 8000 |
-| [[alphaTrade\|alphaTrade]]  | Trading executor — broker, risk, scheduler, consensus | 8001 |
-| [[alphaLink\|alphaLink]] | Frontend UI — Next.js + BFF proxy | 3000 |
-| [[alphaKey\|alphaKey]] | Auth & account management | 8000 |
-| [[alphaTest\|alphaTest]] | Regression testing suite | TBD |
-| [[alphaPerf\|alphaPerf]] | Performance testing suite | TBD |
+| alphaFrame | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
+| alphaGen | ML model generation — train, validate, backtest, publish | 8000 |
+| alphaTrade  | Trading executor — broker, risk, scheduler, consensus | 8001 |
+| alphaLink| Frontend UI — Next.js + BFF proxy | 3000 |
+| alphaKey | Auth & account management | 8000 |
+| alphaTest| Regression testing suite | TBD |
+| alphaPerf | Performance testing suite | TBD |
 
 ---
 
@@ -244,4 +243,4 @@ If you'd like to contribute changes to the docs, open a PR against the `main` br
 This repository also stores an Obsidian vault. The vault-friendly README is preserved as `README.obsidian.md` for local editing (backlinks, transclusions). `README.md` is intended for GitHub rendering.
 
 ## License
-See the LICENSE file in the repository root if present.
+See the LICENSE file in the repository root if present. (Currently in ToDo)
