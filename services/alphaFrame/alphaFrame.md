@@ -24,11 +24,11 @@ tags:
 
 | Page | Description |
 |---|---|
-| [[services/alphaFrame/Architecture\|Architecture]] | Docker services, init flow, observability pipeline |
-| [[services/alphaFrame/Interactions\|Interactions]] | Inputs, outputs, service connectivity map |
-| [[services/alphaFrame/API\|API]] | No inbound API — port map and Nginx routes |
-| [[services/alphaFrame/Data\|Data]] | PostgreSQL databases, MinIO buckets, Redis key spaces |
-| [[services/alphaFrame/Config\|Config]] | All env vars, docker-compose wiring, Nginx config |
+| [[alphaDocs/services/alphaFrame/Architecture\|Architecture]] | Docker services, init flow, observability pipeline |
+| [[alphaDocs/services/alphaFrame/Interactions\|Interactions]] | Inputs, outputs, service connectivity map |
+| [[alphaDocs/services/alphaFrame/API\|API]] | No inbound API — port map and Nginx routes |
+| [[alphaDocs/services/alphaFrame/Data\|Data]] | PostgreSQL databases, MinIO buckets, Redis key spaces |
+| [[alphaDocs/services/alphaFrame/Config\|Config]] | All env vars, docker-compose wiring, Nginx config |
 
 ---
 

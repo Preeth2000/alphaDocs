@@ -24,11 +24,11 @@ tags:
 
 | Page | Description |
 |---|---|
-| [[services/alphaGen/Architecture\|Architecture]] | att library modules, training pipeline, Celery job lifecycle |
-| [[services/alphaGen/Interactions\|Interactions]] | All inputs/outputs, upstream/downstream services |
-| [[services/alphaGen/API\|API]] | 14 FastAPI endpoints + SSE streams + outbound calls |
-| [[services/alphaGen/Data\|Data]] | PostgreSQL tables, MinIO paths, Redis channels |
-| [[services/alphaGen/Config\|Config]] | Env vars, RunConfig YAML schema, validation gate config |
+| [[alphaDocs/services/alphaGen/Architecture\|Architecture]] | att library modules, training pipeline, Celery job lifecycle |
+| [[alphaDocs/services/alphaGen/Interactions\|Interactions]] | All inputs/outputs, upstream/downstream services |
+| [[alphaDocs/services/alphaGen/API\|API]] | 14 FastAPI endpoints + SSE streams + outbound calls |
+| [[alphaDocs/services/alphaGen/Data\|Data]] | PostgreSQL tables, MinIO paths, Redis channels |
+| [[alphaDocs/services/alphaGen/Config\|Config]] | Env vars, RunConfig YAML schema, validation gate config |
 
 ---
 
@@ -85,8 +85,8 @@ flowchart TD
 ## Related
 
 - [[platform/Overview]] — system-wide context
-- [[services/alphaFrame/alphaFrame|alphaFrame]] — provides all infra (Postgres, Redis, MinIO, MLflow)
-- [[services/alphaTrade/alphaTrade|alphaTrade]] — consumes published models via model.ready SSE + MinIO
-- [[services/alphaLink/alphaLink|alphaLink]] — primary user-facing caller
+- [[alphaFrame|alphaFrame]] — provides all infra (Postgres, Redis, MinIO, MLflow)
+- [[alphaTrade|alphaTrade]] — consumes published models via model.ready SSE + MinIO
+- [[alphaLink|alphaLink]] — primary user-facing caller
 - [[reference/Event-Channels]] — Redis pub/sub channels
 - [[reference/Glossary]] — run, gate, manifest, att

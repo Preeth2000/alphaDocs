@@ -14,7 +14,7 @@ tags:
 > Performance scenarios and budgets for alphaPerf, derived from the 2026-06-13 code review.
 > Known hot spots found in review are listed per service — these are where load tests should bite first.
 
-[[alphaPerf]] · [[services/alphaTest/Regression-Scenarios|Regression Scenarios]] · [[platform/Overview]]
+[[alphaPerf]] · [[Regression-Scenarios|Regression Scenarios]] · [[platform/Overview]]
 
 ---
 
@@ -54,7 +54,7 @@ tags:
 1. **Steady-state verify**: 500 rps mixed GET across alphaGen/alphaTrade with JWT auth on → JWKS caching effectiveness, denylist Redis round-trip (per-call connection bead), DB token_version lookup cost.
 2. **Login storm**: 20 rps logins (argon2 CPU); find the knee; verify event loop not starved (sync-in-async bead). Run a parallel variant with MFA-enabled accounts (login carries `totp_code`) to confirm the TOTP HMAC verify adds negligible CPU vs argon2.
 3. **Vault read fan-out**: alphaTrade+alphaGen secrets refresh under tick load; N+1 audit-commit cost.
-4. **TOTP verify micro-bench**: in-process `pytest-benchmark` on the TOTP code-verification path (pyotp/HMAC) — establishes that MFA step-up is not a login hot-spot. New driver: alphaKey MFA feature ([[platform/Cross-Service-Backlog|backlog]] §1.2).
+4. **TOTP verify micro-bench**: in-process `pytest-benchmark` on the TOTP code-verification path (pyotp/HMAC) — establishes that MFA step-up is not a login hot-spot. New driver: alphaKey MFA feature ([[alphaDocs/services/alphaKey/API|alphaKey API]] — TOTP/MFA).
 
 > [!note] Password reset is not a perf target
 > `forgot-password`/`reset-password` are low-rps, SMTP-bound flows (outbound mail dominates). No load

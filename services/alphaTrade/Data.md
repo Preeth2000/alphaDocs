@@ -8,7 +8,7 @@ tags:
 
 # alphaTrade — Data
 
-[[services/alphaTrade/alphaTrade|alphaTrade]] · [[services/alphaTrade/Architecture|Architecture]] · [[services/alphaTrade/Interactions|Interactions]] · [[services/alphaTrade/API|API]] · [[services/alphaTrade/Config|Config]]
+[[alphaTrade|alphaTrade]] · [[alphaDocs/services/alphaTrade/Architecture|Architecture]] · [[alphaDocs/services/alphaTrade/Interactions|Interactions]] · [[alphaDocs/services/alphaTrade/API|API]] · [[alphaDocs/services/alphaTrade/Config|Config]]
 
 ---
 

@@ -24,11 +24,11 @@ tags:
 
 | Page | Description |
 |---|---|
-| [[services/alphaKey/Architecture\|Architecture]] | Auth flow, vault encryption, token lifecycle |
-| [[services/alphaKey/Interactions\|Interactions]] | Inputs/outputs, callers, service-to-service auth |
-| [[services/alphaKey/API\|API]] | All endpoints + JWKS + introspection |
-| [[services/alphaKey/Data\|Data]] | 6 DB tables, read/write counts |
-| [[services/alphaKey/Config\|Config]] | Env vars, token TTLs, vault key config |
+| [[alphaDocs/services/alphaKey/Architecture\|Architecture]] | Auth flow, vault encryption, token lifecycle |
+| [[alphaDocs/services/alphaKey/Interactions\|Interactions]] | Inputs/outputs, callers, service-to-service auth |
+| [[alphaDocs/services/alphaKey/API\|API]] | All endpoints + JWKS + introspection |
+| [[alphaDocs/services/alphaKey/Data\|Data]] | 6 DB tables, read/write counts |
+| [[alphaDocs/services/alphaKey/Config\|Config]] | Env vars, token TTLs, vault key config |
 
 ---
 
@@ -73,7 +73,7 @@ flowchart TD
 ## Related
 
 - [[platform/Overview]]
-- [[services/alphaLink/alphaLink|alphaLink]] — primary user-facing caller
-- [[services/alphaGen/alphaGen|alphaGen]] — consumes JWKS + vault secrets
-- [[services/alphaTrade/alphaTrade|alphaTrade]] — consumes JWKS + introspection
+- [[alphaLink|alphaLink]] — primary user-facing caller
+- [[alphaGen|alphaGen]] — consumes JWKS + vault secrets
+- [[alphaTrade|alphaTrade]] — consumes JWKS + introspection
 - [[reference/Glossary]] — JWT, vault, envelope encryption

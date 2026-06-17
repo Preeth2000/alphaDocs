@@ -8,7 +8,7 @@ tags:
 
 # alphaKey — Data
 
-[[services/alphaKey/alphaKey|alphaKey]] · [[services/alphaKey/Architecture|Architecture]] · [[services/alphaKey/Interactions|Interactions]] · [[services/alphaKey/API|API]] · [[services/alphaKey/Config|Config]]
+[[alphaKey|alphaKey]] · [[alphaDocs/services/alphaKey/Architecture|Architecture]] · [[alphaDocs/services/alphaKey/Interactions|Interactions]] · [[alphaDocs/services/alphaKey/API|API]] · [[alphaDocs/services/alphaKey/Config|Config]]
 
 ---
 

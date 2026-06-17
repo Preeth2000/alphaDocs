@@ -8,7 +8,7 @@ tags:
 
 # alphaFrame — Architecture
 
-[[services/alphaFrame/alphaFrame|alphaFrame]] · [[services/alphaFrame/Interactions|Interactions]] · [[services/alphaFrame/API|API]] · [[services/alphaFrame/Data|Data]] · [[services/alphaFrame/Config|Config]]
+[[alphaFrame|alphaFrame]] · [[alphaDocs/services/alphaFrame/Interactions|Interactions]] · [[alphaDocs/services/alphaFrame/API|API]] · [[alphaDocs/services/alphaFrame/Data|Data]] · [[alphaDocs/services/alphaFrame/Config|Config]]
 
 ---
 

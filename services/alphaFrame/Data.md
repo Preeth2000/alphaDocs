@@ -8,7 +8,7 @@ tags:
 
 # alphaFrame — Data
 
-[[services/alphaFrame/alphaFrame|alphaFrame]] · [[services/alphaFrame/Architecture|Architecture]] · [[services/alphaFrame/Interactions|Interactions]] · [[services/alphaFrame/API|API]] · [[services/alphaFrame/Config|Config]]
+[[alphaFrame|alphaFrame]] · [[alphaDocs/services/alphaFrame/Architecture|Architecture]] · [[alphaDocs/services/alphaFrame/Interactions|Interactions]] · [[alphaDocs/services/alphaFrame/API|API]] · [[alphaDocs/services/alphaFrame/Config|Config]]
 
 ---
 
@@ -22,15 +22,15 @@ Single PostgreSQL 16 instance. One user (`platform`) owns all databases.
 
 | Database | Owner | Used by | Managed by |
 |---|---|---|---|
-| `alphagen` | `platform` | [[services/alphaGen/alphaGen\|alphaGen]] | Alembic (alphagen-api on startup) |
-| `alphatrade` | `platform` | [[services/alphaTrade/alphaTrade\|alphaTrade]] | Alembic (alphatrade on startup) |
+| `alphagen` | `platform` | [[alphaGen\|alphaGen]] | Alembic (alphagen-api on startup) |
+| `alphatrade` | `platform` | [[alphaTrade\|alphaTrade]] | Alembic (alphatrade on startup) |
 | `mlflow` | `platform` | MLflow server | MLflow internal migrations |
-| `alphakey` | `platform` | [[services/alphaKey/alphaKey\|alphaKey]] | Alembic (alphakey-api on startup) |
+| `alphakey` | `platform` | [[alphaKey\|alphaKey]] | Alembic (alphakey-api on startup) |
 
 For tables within each database see the owning service's Data page:
-- [[services/alphaGen/Data]] — `runs`, `validation_settings`
-- [[services/alphaTrade/Data]] — 23 tables covering positions, orders, signals, backtests, bot config
-- [[services/alphaKey/Data]] — `user`, `refresh_token`, `signing_key`, `credential`, `audit_log`, `credential_access_audit`
+- [[alphaDocs/services/alphaGen/Data]] — `runs`, `validation_settings`
+- [[alphaDocs/services/alphaTrade/Data]] — 23 tables covering positions, orders, signals, backtests, bot config
+- [[alphaDocs/services/alphaKey/Data]] — `user`, `refresh_token`, `signing_key`, `credential`, `audit_log`, `credential_access_audit`
 
 ---
 
@@ -44,9 +44,9 @@ Single MinIO instance on port 9000. Console on 9001.
 
 | Bucket | Contents | Written by | Read by |
 |---|---|---|---|
-| `models` | `model.onnx`, `manifest.json`, `backtest.json` per version | [[services/alphaGen/alphaGen\|alphaGen]] publish endpoint | [[services/alphaTrade/alphaTrade\|alphaTrade]] ModelSyncDaemon |
-| `trades` | Trade logs, reports | [[services/alphaTrade/alphaTrade\|alphaTrade]] | Manual / future reporting |
-| `mlflow` | MLflow registered model versions (artifacts) | MLflow server (via alphaGen) | MLflow, [[services/alphaTrade/alphaTrade\|alphaTrade]] |
+| `models` | `model.onnx`, `manifest.json`, `backtest.json` per version | [[alphaGen\|alphaGen]] publish endpoint | [[alphaTrade\|alphaTrade]] ModelSyncDaemon |
+| `trades` | Trade logs, reports | [[alphaTrade\|alphaTrade]] | Manual / future reporting |
+| `mlflow` | MLflow registered model versions (artifacts) | MLflow server (via alphaGen) | MLflow, [[alphaTrade\|alphaTrade]] |
 
 **Path structure (models bucket):** `{user}/{account}/{run_name}/{version}/` — e.g. `prod/isa/aapl_daily_mlp/v3/model.onnx`  
 **Latest pointer:** `{user}/{account}/{run_name}/latest` — JSON with `{version, uploaded_at, run_name}` for polling
@@ -61,9 +61,9 @@ Single Redis 7 instance on port 6379. No persistence (in-memory only — restart
 
 | Redis DB | Used by | Purpose |
 |---|---|---|
-| `db 0` | [[services/alphaGen/alphaGen\|alphaGen]] Celery broker | Task routing |
-| `db 0` | [[services/alphaKey/alphaKey\|alphaKey]] | Token denylist (JTI → expiry), session data |
-| `db 1` | [[services/alphaGen/alphaGen\|alphaGen]] Celery results | Task state + return values |
+| `db 0` | [[alphaGen\|alphaGen]] Celery broker | Task routing |
+| `db 0` | [[alphaKey\|alphaKey]] | Token denylist (JTI → expiry), session data |
+| `db 1` | [[alphaGen\|alphaGen]] Celery results | Task state + return values |
 
 ### Pub/Sub Channels (db 0)
 

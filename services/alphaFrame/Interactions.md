@@ -8,7 +8,7 @@ tags:
 
 # alphaFrame — Interactions
 
-[[services/alphaFrame/alphaFrame|alphaFrame]] · [[services/alphaFrame/Architecture|Architecture]] · [[services/alphaFrame/API|API]] · [[services/alphaFrame/Data|Data]] · [[services/alphaFrame/Config|Config]]
+[[alphaFrame|alphaFrame]] · [[alphaDocs/services/alphaFrame/Architecture|Architecture]] · [[alphaDocs/services/alphaFrame/API|API]] · [[alphaDocs/services/alphaFrame/Data|Data]] · [[alphaDocs/services/alphaFrame/Config|Config]]
 
 ---
 
@@ -32,15 +32,15 @@ alphaFrame is **pure infrastructure** — it receives no application-layer reque
 
 | Destination | Mechanism | Format | What |
 |---|---|---|---|
-| [[services/alphaKey/alphaKey\|alphaKey]] | TCP :5432 | SQL | `alphakey` database queries |
-| [[services/alphaGen/alphaGen\|alphaGen]] API + Worker | TCP :5432 | SQL | `alphagen` database queries |
-| [[services/alphaTrade/alphaTrade\|alphaTrade]] | TCP :5432 | SQL | `alphatrade` database queries |
+| [[alphaKey\|alphaKey]] | TCP :5432 | SQL | `alphakey` database queries |
+| [[alphaGen\|alphaGen]] API + Worker | TCP :5432 | SQL | `alphagen` database queries |
+| [[alphaTrade\|alphaTrade]] | TCP :5432 | SQL | `alphatrade` database queries |
 | MLflow server | TCP :5432 | SQL | `mlflow` database queries |
 | All app services | TCP :6379 | Redis protocol | Pub/sub, Celery broker, token denylist |
-| [[services/alphaGen/alphaGen\|alphaGen]], [[services/alphaTrade/alphaTrade\|alphaTrade]] | HTTP :9000 | S3 API | Model artifacts (models bucket), trade logs (trades bucket), MLflow artifacts (mlflow bucket) — each service uses a scoped MinIO account |
+| [[alphaGen\|alphaGen]], [[alphaTrade\|alphaTrade]] | HTTP :9000 | S3 API | Model artifacts (models bucket), trade logs (trades bucket), MLflow artifacts (mlflow bucket) — each service uses a scoped MinIO account |
 | `postgres-backup` | pg_dump → volume | Compressed SQL | Daily backup of all databases to `postgres_backups` volume; 7-day retention |
 | All app services | HTTP :5000 | REST | MLflow experiment tracking + model registry API |
-| [[services/alphaLink/alphaLink\|alphaLink]] | HTTP/HTTPS | Proxied REST + SSE | Nginx forwards to app services |
+| [[alphaLink\|alphaLink]] | HTTP/HTTPS | Proxied REST + SSE | Nginx forwards to app services |
 | Grafana | HTTP | Dashboard queries | Prometheus metrics, Loki logs, Tempo traces |
 | Alertmanager | HTTP | Alert delivery | `severity=critical` → Slack + PagerDuty (env vars); non-critical silently dropped |
 

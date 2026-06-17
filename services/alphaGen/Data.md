@@ -8,7 +8,7 @@ tags:
 
 # alphaGen — Data
 
-[[services/alphaGen/alphaGen|alphaGen]] · [[services/alphaGen/Architecture|Architecture]] · [[services/alphaGen/Interactions|Interactions]] · [[services/alphaGen/API|API]] · [[services/alphaGen/Config|Config]]
+[[alphaGen|alphaGen]] · [[alphaDocs/services/alphaGen/Architecture|Architecture]] · [[alphaDocs/services/alphaGen/Interactions|Interactions]] · [[alphaDocs/services/alphaGen/API|API]] · [[alphaDocs/services/alphaGen/Config|Config]]
 
 ---
 
@@ -178,7 +178,7 @@ See [[reference/Event-Channels]] for full payload formats.
 | Channel | DB | Publisher | Subscriber |
 |---|---|---|---|
 | `run:{id}:log` | db0 | Celery worker (RedisLogHandler) | `GET /runs/{id}/log` SSE endpoint |
-| `model.ready` | db0 | Celery worker (on success) + `POST /runs/{id}/publish` | `GET /runs/events` SSE → [[services/alphaTrade/alphaTrade\|alphaTrade]] |
+| `model.ready` | db0 | Celery worker (on success) + `POST /runs/{id}/publish` | `GET /runs/events` SSE → [[alphaTrade\|alphaTrade]] |
 
 ---
 
@@ -190,5 +190,5 @@ See [[reference/Event-Channels]] for full payload formats.
 | Run params (arch, lr, etc.) | MLflow `mlflow` DB | `att.mlflow_utils.log_and_register_run()` | MLflow UI |
 | Run metrics (sharpe, drawdown, etc.) | MLflow `mlflow` DB | Same | MLflow UI, alphaTrade |
 | Registered model | MLflow `mlflow` DB | Same | alphaTrade promote endpoint |
-| Model alias (`staging` / `production`) | MLflow `mlflow` DB | `POST /models/{name}/promote` | [[services/alphaTrade/alphaTrade\|alphaTrade]] `ModelSyncDaemon` |
+| Model alias (`staging` / `production`) | MLflow `mlflow` DB | `POST /models/{name}/promote` | [[alphaTrade\|alphaTrade]] `ModelSyncDaemon` |
 | model.onnx (MLflow artifact) | MinIO `mlflow` bucket | MLflow (via SDK) | MLflow UI |

@@ -21,7 +21,7 @@ last-reviewed: 2026-06-06
 | **Goal** | Automated ML-driven trading across multiple instruments |
 | **Architecture** | Microservices — each service is an independent repo |
 | **Communication** | REST · SSE · Redis pub/sub · Celery task queue |
-| **Infra host** | [[services/alphaFrame/alphaFrame\|alphaFrame]] (Docker Compose) |
+| **Infra host** | [[alphaFrame\|alphaFrame]] (Docker Compose) |
 
 → [[platform/Overview]] for the full system map + global Mermaid diagram.
 
@@ -31,13 +31,13 @@ last-reviewed: 2026-06-06
 
 | Service | Status | Purpose | Port |
 |---|---|---|---|
-| [[services/alphaFrame/alphaFrame\|alphaFrame]] | 🟢 Full | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
-| [[services/alphaGen/alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
-| [[services/alphaTrade/alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — broker, risk, scheduler, consensus | 8001 |
-| [[services/alphaLink/alphaLink\|alphaLink]] | 🟢 Full | Frontend UI — Next.js + BFF proxy | 3000 |
-| [[services/alphaKey/alphaKey\|alphaKey]] | 🟡 Partial | Auth & account management | 8000 |
-| [[services/alphaTest/alphaTest\|alphaTest]] | ⬜ Planned | Regression testing suite | TBD |
-| [[services/alphaPerf/alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing suite | TBD |
+| [[alphaFrame\|alphaFrame]] | 🟢 Full | Infrastructure — MinIO, MLflow, Redis, Postgres, Nginx, OTel | multiple |
+| [[alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
+| [[alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — broker, risk, scheduler, consensus | 8001 |
+| [[alphaLink\|alphaLink]] | 🟢 Full | Frontend UI — Next.js + BFF proxy | 3000 |
+| [[alphaKey\|alphaKey]] | 🟡 Partial | Auth & account management | 8000 |
+| [[alphaTest\|alphaTest]] | ⬜ Planned | Regression testing suite | TBD |
+| [[alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing suite | TBD |
 
 ---
 
@@ -49,7 +49,17 @@ last-reviewed: 2026-06-06
 | [[platform/Features]] | All platform features grouped by domain |
 | [[platform/Tech-Stack]] | Full tech stack per service + shared infra |
 | [[platform/Key-Decisions]] | Architecture decision records (comms, security, scaling, observability) |
-| [[platform/COMPLIANCE]] | Open compliance items (T212 ToS, FCA perimeter, GDPR, production secrets) |
+
+---
+
+## ToDo
+
+Not-yet-done cross-service work and long-term tasks. See [[ToDo]].
+
+| Page | Contents |
+|---|---|
+| [[ToDo/Cross-Service-Backlog]] | Open cross-service obligations + known unfixed races/bugs |
+| [[ToDo/Compliance]] | Open compliance items (T212 ToS, FCA perimeter, GDPR, production secrets) |
 
 ---
 

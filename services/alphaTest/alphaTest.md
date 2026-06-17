@@ -180,7 +180,7 @@ Separate from the schema-snapshot `[CON]` tests above — a parallel rollout of 
 | 2 — alphaLink → alphaKey | alphaLink (TS) | alphaKey (Python) | Login/refresh/logout/me (9 interactions) | ✅ Done |
 | 3 — alphaGen + alphaTrade → alphaKey | alphaGen (Python), alphaTrade (Python) | alphaKey (Python) | JWKS, token-version, secrets (5 interactions each) | ✅ Done |
 | 4 — alphaLink → alphaTrade | alphaLink (TS) | alphaTrade (Python) | Kill-switch, halt, resume, promote×2, demote×2 (7 interactions) | ✅ Done |
-| 5 — alphaLink → alphaGen | alphaLink (TS) | alphaGen (Python) | Jobs/runs endpoints | ⬜ Not started |
+| 5 — alphaLink → alphaGen | alphaLink (TS) | alphaGen (Python) | Jobs/runs endpoints | ✅ Done |
 
 ### Provider Verification Pattern
 

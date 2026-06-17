@@ -79,13 +79,13 @@ flowchart TD
 
 | Service | Status | Role | Port |
 |---|---|---|---|
-| [[services/alphaFrame/alphaFrame\|alphaFrame]] | 🟢 Full | Shared infrastructure — Postgres, Redis, MinIO, MLflow, Nginx, Observability | multiple |
-| [[services/alphaGen/alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
-| [[services/alphaTrade/alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — scheduler, inference, risk, orders | 8081/8080/9090 |
-| [[services/alphaLink/alphaLink\|alphaLink]] | 🟢 Full | Frontend + BFF — Next.js UI + proxy | 3000 |
-| [[services/alphaKey/alphaKey\|alphaKey]] | 🟡 Partial | Auth + credential vault — JWT, Argon2, Fernet | 8000 |
-| [[services/alphaTest/alphaTest\|alphaTest]] | ⬜ Planned | Regression testing | TBD |
-| [[services/alphaPerf/alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing | TBD |
+| [[alphaFrame\|alphaFrame]] | 🟢 Full | Shared infrastructure — Postgres, Redis, MinIO, MLflow, Nginx, Observability | multiple |
+| [[alphaGen\|alphaGen]] | 🟢 Full | ML model generation — train, validate, backtest, publish | 8000 |
+| [[alphaTrade\|alphaTrade]] | 🟢 Full | Trading executor — scheduler, inference, risk, orders | 8081/8080/9090 |
+| [[alphaLink\|alphaLink]] | 🟢 Full | Frontend + BFF — Next.js UI + proxy | 3000 |
+| [[alphaKey\|alphaKey]] | 🟡 Partial | Auth + credential vault — JWT, Argon2, Fernet | 8000 |
+| [[alphaTest\|alphaTest]] | ⬜ Planned | Regression testing | TBD |
+| [[alphaPerf\|alphaPerf]] | ⬜ Planned | Performance testing | TBD |
 
 ---
 

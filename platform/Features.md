@@ -14,7 +14,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Model Training ([[services/alphaGen/alphaGen|alphaGen]])
+## Model Training ([[alphaGen|alphaGen]])
 
 | Feature | Description |
 |---|---|
@@ -37,7 +37,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Validation Gate ([[services/alphaGen/alphaGen|alphaGen]])
+## Validation Gate ([[alphaGen|alphaGen]])
 
 | Feature | Description |
 |---|---|
@@ -49,7 +49,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Model Publishing & Registry ([[services/alphaGen/alphaGen|alphaGen]] + [[services/alphaFrame/alphaFrame|alphaFrame]])
+## Model Publishing & Registry ([[alphaGen|alphaGen]] + [[alphaFrame|alphaFrame]])
 
 | Feature | Description |
 |---|---|
@@ -65,7 +65,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Trading Execution ([[services/alphaTrade/alphaTrade|alphaTrade]])
+## Trading Execution ([[alphaTrade|alphaTrade]])
 
 | Feature | Description |
 |---|---|
@@ -87,7 +87,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Risk Management ([[services/alphaTrade/alphaTrade|alphaTrade]])
+## Risk Management ([[alphaTrade|alphaTrade]])
 
 | Feature | Description |
 |---|---|
@@ -104,7 +104,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Backtesting ([[services/alphaTrade/alphaTrade|alphaTrade]])
+## Backtesting ([[alphaTrade|alphaTrade]])
 
 | Feature | Description |
 |---|---|
@@ -118,7 +118,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Alerting ([[services/alphaTrade/alphaTrade|alphaTrade]])
+## Alerting ([[alphaTrade|alphaTrade]])
 
 | Feature | Description |
 |---|---|
@@ -131,7 +131,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Authentication & Security ([[services/alphaKey/alphaKey|alphaKey]])
+## Authentication & Security ([[alphaKey|alphaKey]])
 
 | Feature | Description |
 |---|---|
@@ -154,7 +154,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Frontend / UX ([[services/alphaLink/alphaLink|alphaLink]])
+## Frontend / UX ([[alphaLink|alphaLink]])
 
 | Feature | Description |
 |---|---|
@@ -175,7 +175,7 @@ All features across the alphaPlatform, grouped by domain.
 
 ---
 
-## Observability ([[services/alphaFrame/alphaFrame|alphaFrame]])
+## Observability ([[alphaFrame|alphaFrame]])
 
 | Feature | Description |
 |---|---|

@@ -24,11 +24,11 @@ tags:
 
 | Page | Description |
 |---|---|
-| [[services/alphaLink/Architecture\|Architecture]] | App structure, BFF pattern, state management |
-| [[services/alphaLink/Interactions\|Interactions]] | All inputs/outputs, proxied services |
-| [[services/alphaLink/API\|API]] | All BFF route handlers (`/app/api/*`) + outbound calls |
-| [[services/alphaLink/Data\|Data]] | No DB — local template/artifact filesystem storage |
-| [[services/alphaLink/Config\|Config]] | Env vars, auth flow, session config |
+| [[alphaDocs/services/alphaLink/Architecture\|Architecture]] | App structure, BFF pattern, state management |
+| [[alphaDocs/services/alphaLink/Interactions\|Interactions]] | All inputs/outputs, proxied services |
+| [[alphaDocs/services/alphaLink/API\|API]] | All BFF route handlers (`/app/api/*`) + outbound calls |
+| [[alphaDocs/services/alphaLink/Data\|Data]] | No DB — local template/artifact filesystem storage |
+| [[alphaDocs/services/alphaLink/Config\|Config]] | Env vars, auth flow, session config |
 
 ---
 
@@ -80,7 +80,7 @@ flowchart TD
 ## Related
 
 - [[platform/Overview]] — system-wide context
-- [[services/alphaGen/alphaGen|alphaGen]] — training API backend
-- [[services/alphaTrade/alphaTrade|alphaTrade]] — trading API backend
-- [[services/alphaKey/alphaKey|alphaKey]] — auth backend
+- [[alphaGen|alphaGen]] — training API backend
+- [[alphaTrade|alphaTrade]] — trading API backend
+- [[alphaKey|alphaKey]] — auth backend
 - [[reference/Glossary]] — BFF, SSE

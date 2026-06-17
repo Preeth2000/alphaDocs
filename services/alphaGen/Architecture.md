@@ -8,13 +8,13 @@ tags:
 
 # alphaGen — Architecture
 
-[[services/alphaGen/alphaGen|alphaGen]] · [[services/alphaGen/Interactions|Interactions]] · [[services/alphaGen/API|API]] · [[services/alphaGen/Data|Data]] · [[services/alphaGen/Config|Config]]
+[[alphaGen|alphaGen]] · [[alphaDocs/services/alphaGen/Interactions|Interactions]] · [[alphaDocs/services/alphaGen/API|API]] · [[alphaDocs/services/alphaGen/Data|Data]] · [[alphaDocs/services/alphaGen/Config|Config]]
 
 ---
 
 ## Purpose
 
-alphaGen trains multi-class (BUY/SELL/HOLD) classifiers on OHLCV price data, validates their quality through a configurable gate, runs walk-forward backtests, exports to ONNX, and publishes to MinIO so [[services/alphaTrade/alphaTrade|alphaTrade]] can consume them. Exposes a FastAPI + Celery platform for async job management, and retains a CLI (`att`) for local dev and CI.
+alphaGen trains multi-class (BUY/SELL/HOLD) classifiers on OHLCV price data, validates their quality through a configurable gate, runs walk-forward backtests, exports to ONNX, and publishes to MinIO so [[alphaTrade|alphaTrade]] can consume them. Exposes a FastAPI + Celery platform for async job management, and retains a CLI (`att`) for local dev and CI.
 
 ---
 

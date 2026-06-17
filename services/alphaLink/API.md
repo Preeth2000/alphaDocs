@@ -8,7 +8,7 @@ tags:
 
 # alphaLink — API
 
-[[services/alphaLink/alphaLink|alphaLink]] · [[services/alphaLink/Architecture|Architecture]] · [[services/alphaLink/Interactions|Interactions]] · [[services/alphaLink/Data|Data]] · [[services/alphaLink/Config|Config]]
+[[alphaLink|alphaLink]] · [[alphaDocs/services/alphaLink/Architecture|Architecture]] · [[alphaDocs/services/alphaLink/Interactions|Interactions]] · [[alphaDocs/services/alphaLink/Data|Data]] · [[alphaDocs/services/alphaLink/Config|Config]]
 
 ---
 
@@ -21,7 +21,7 @@ tags:
 
 ### Auth Routes (`/api/auth/`)
 
-Proxies to [[services/alphaKey/alphaKey|alphaKey]] `http://alphakey-api:8000`
+Proxies to [[alphaKey|alphaKey]] `http://alphakey-api:8000`
 
 | Method | Path | Proxies to | Special handling |
 |---|---|---|---|
@@ -47,7 +47,7 @@ Proxies to [[services/alphaKey/alphaKey|alphaKey]] `http://alphakey-api:8000`
 
 ### Training Jobs (`/api/jobs/`)
 
-Proxies to [[services/alphaGen/alphaGen|alphaGen]] `ALPHAGEN_API_URL`
+Proxies to [[alphaGen|alphaGen]] `ALPHAGEN_API_URL`
 
 | Method | Path | Proxies to | Notes |
 |---|---|---|---|
@@ -67,7 +67,7 @@ Proxies to [[services/alphaGen/alphaGen|alphaGen]] `ALPHAGEN_API_URL`
 
 ### Trade Proxy (`/api/trade/`)
 
-Proxies to [[services/alphaTrade/alphaTrade|alphaTrade]] `ALPHATRADE_API_URL` (`https://localhost/api/v1`)
+Proxies to [[alphaTrade|alphaTrade]] `ALPHATRADE_API_URL` (`https://localhost/api/v1`)
 
 | Method | Path | Proxies to | Notes |
 |---|---|---|---|
@@ -128,9 +128,9 @@ All SSE proxies wire an `AbortController` to `req.signal`: when the browser disc
 
 | Target | How | When |
 |---|---|---|
-| [[services/alphaKey/alphaKey\|alphaKey]] `:8000` | HTTP via fetch | All `/api/auth/*` calls; `/api/polygon-key` vault read/write |
-| [[services/alphaGen/alphaGen\|alphaGen]] `ALPHAGEN_API_URL` | HTTP via fetch | All `/api/jobs/*` + `/api/config/*` (with `Authorization: Bearer` forwarded) |
-| [[services/alphaTrade/alphaTrade\|alphaTrade]] `ALPHATRADE_API_URL` | HTTP via fetch | All `/api/trade/*` |
+| [[alphaKey\|alphaKey]] `:8000` | HTTP via fetch | All `/api/auth/*` calls; `/api/polygon-key` vault read/write |
+| [[alphaGen\|alphaGen]] `ALPHAGEN_API_URL` | HTTP via fetch | All `/api/jobs/*` + `/api/config/*` (with `Authorization: Bearer` forwarded) |
+| [[alphaTrade\|alphaTrade]] `ALPHATRADE_API_URL` | HTTP via fetch | All `/api/trade/*` |
 | `att` binary (`ATT_BIN`) | Child process | `POST /api/jobs/validate` |
 | Local filesystem `~/.alphalink/` | `fs` module | Templates read/write, artifacts |
 

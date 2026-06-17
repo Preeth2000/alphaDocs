@@ -8,7 +8,7 @@ tags:
 
 # alphaLink — Config
 
-[[services/alphaLink/alphaLink|alphaLink]] · [[services/alphaLink/Architecture|Architecture]] · [[services/alphaLink/Interactions|Interactions]] · [[services/alphaLink/API|API]] · [[services/alphaLink/Data|Data]]
+[[alphaLink|alphaLink]] · [[alphaDocs/services/alphaLink/Architecture|Architecture]] · [[alphaDocs/services/alphaLink/Interactions|Interactions]] · [[alphaDocs/services/alphaLink/API|API]] · [[alphaDocs/services/alphaLink/Data|Data]]
 
 ---
 

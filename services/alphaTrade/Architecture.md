@@ -8,7 +8,7 @@ tags:
 
 # alphaTrade — Architecture
 
-[[services/alphaTrade/alphaTrade|alphaTrade]] · [[services/alphaTrade/Interactions|Interactions]] · [[services/alphaTrade/API|API]] · [[services/alphaTrade/Data|Data]] · [[services/alphaTrade/Config|Config]]
+[[alphaTrade|alphaTrade]] · [[alphaDocs/services/alphaTrade/Interactions|Interactions]] · [[alphaDocs/services/alphaTrade/API|API]] · [[alphaDocs/services/alphaTrade/Data|Data]] · [[alphaDocs/services/alphaTrade/Config|Config]]
 
 ---
 
@@ -133,11 +133,11 @@ After a BUY order fills, a dedicated async task polls both bracket legs every 10
 
 ## Key Design Decisions
 
-- **DB-first overrides**: YAML seeds Settings at startup; DB values overwrite on each tick/API update — enables hot-reload without restart. See [[services/alphaTrade/Config]] for full chain.
+- **DB-first overrides**: YAML seeds Settings at startup; DB values overwrite on each tick/API update — enables hot-reload without restart. See [[alphaDocs/services/alphaTrade/Config]] for full chain.
 - **ONNX Runtime only**: No PyTorch dependency in alphaTrade. Manifest provides everything needed for inference.
 - **Softmax consensus with confidence gates**: Multi-model averaging prevents single-model noise. Optional `consensus_min_confidence` (absolute probability threshold) and `consensus_min_margin` (lead over runner-up) gates coerce low-conviction signals to HOLD before they reach the risk pipeline.
 - **Fill price polling**: After `place_market_order`, AsyncBroker polls `get_order` up to 30s at 1s intervals to capture the real fill price. OCO SL/TP prices and journal PnL are computed from the confirmed fill, not the signal-time price.
-- **Secrets at rest encrypted**: `BotSettings` secret columns (API keys, SMTP password, Slack webhook) are encrypted with Fernet symmetric encryption when `DB_SECRETS_KEY` is set. Reads are transparently decrypted; plaintext rows written before encryption was enabled are returned as-is (migration-safe fallback). For production, `SECRETS_SOURCE=alphakey` is required (see COMPLIANCE.md).
+- **Secrets at rest encrypted**: `BotSettings` secret columns (API keys, SMTP password, Slack webhook) are encrypted with Fernet symmetric encryption when `DB_SECRETS_KEY` is set. Reads are transparently decrypted; plaintext rows written before encryption was enabled are returned as-is (migration-safe fallback). For production, `SECRETS_SOURCE=alphakey` is required (see [[Compliance]]).
 - **model.ready dual-path sync**: `ModelSyncDaemon` subscribes to the Redis `model.ready` channel alongside its periodic MLflow poll. Payload `{run_name, version, published_at, artifact_prefix?}`. If `artifact_prefix` present (explicit `POST /runs/{id}/publish`) → download artifacts directly from MinIO at that prefix. If absent (Celery auto-promote via MLflow) → trigger `_sync_once()` immediately instead of waiting for the next poll interval.
 - **JWT iss/aud validation**: `verify_token()` validates `iss` and `aud` claims against `JWT_ISSUER` / `JWT_AUDIENCE` env vars (default `alphakey`). Tokens with wrong or missing iss/aud are rejected. Configurable for multi-tenant deployments.
 - **Registry refresh throttled**: `ModelRegistry.refresh()` (disk scan) and DB override reads run at most once per 60s across all interval tick functions, not once per tick per interval.

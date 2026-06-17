@@ -8,7 +8,7 @@ tags:
 
 # {{SERVICE_NAME}} — Interactions
 
-[[{{SERVICE_NAME}}]] · [[Architecture]] · [[API]] · [[Data]] · [[Config]]
+[[{{SERVICE_NAME}}]] · [[alphaDocs/services/alphaKey/Architecture]] · [[alphaDocs/services/alphaKey/API]] · [[alphaDocs/services/alphaKey/Data]] · [[alphaDocs/services/alphaKey/Config]]
 
 ---
 

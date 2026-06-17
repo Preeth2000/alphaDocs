@@ -23,11 +23,11 @@ tags:
 
 | Page | Description |
 |---|---|
-| [[Architecture]] | Internal modules, components, primary flow sequence |
-| [[Interactions]] | All inputs and outputs, upstream/downstream |
-| [[API]] | Endpoints exposed + outbound calls made |
-| [[Data]] | Datastores, DB read/write counts per operation |
-| [[Config]] | Env vars, config files, override priority chain |
+| [[alphaDocs/services/alphaKey/Architecture]] | Internal modules, components, primary flow sequence |
+| [[alphaDocs/services/alphaKey/Interactions]] | All inputs and outputs, upstream/downstream |
+| [[alphaDocs/services/alphaKey/API]] | Endpoints exposed + outbound calls made |
+| [[alphaDocs/services/alphaKey/Data]] | Datastores, DB read/write counts per operation |
+| [[alphaDocs/services/alphaKey/Config]] | Env vars, config files, override priority chain |
 
 ---
 

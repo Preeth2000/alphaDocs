@@ -17,23 +17,23 @@ All asynchronous event mechanisms used across projectAlpha — Redis pub/sub cha
 
 ## Redis Pub/Sub Channels
 
-Hosted by [[services/alphaFrame/alphaFrame|alphaFrame]] Redis instance.
+Hosted by [[alphaFrame|alphaFrame]] Redis instance.
 
 | Channel | Pattern | Producer | Consumer(s) | Payload | Purpose |
 |---|---|---|---|---|---|
-| `run:{id}:log` | Per-run | [[services/alphaGen/alphaGen\|alphaGen]] Celery worker | [[services/alphaGen/alphaGen\|alphaGen]] API (`GET /runs/{id}/log`) | `{"type": "log"|"status"|"done", "text": "…", "status": "…"}` | Stream live training log lines + status transitions to SSE subscribers |
-| `model.ready` | Global | [[services/alphaGen/alphaGen\|alphaGen]] Celery worker (auto-promote) or `/runs/{id}/publish` endpoint | [[services/alphaTrade/alphaTrade\|alphaTrade]], [[services/alphaLink/alphaLink\|alphaLink]] | See schema below | Notify when a new model is ready for consumption |
+| `run:{id}:log` | Per-run | [[alphaGen\|alphaGen]] Celery worker | [[alphaGen\|alphaGen]] API (`GET /runs/{id}/log`) | `{"type": "log"|"status"|"done", "text": "…", "status": "…"}` | Stream live training log lines + status transitions to SSE subscribers |
+| `model.ready` | Global | [[alphaGen\|alphaGen]] Celery worker (auto-promote) or `/runs/{id}/publish` endpoint | [[alphaTrade\|alphaTrade]], [[alphaLink\|alphaLink]] | See schema below | Notify when a new model is ready for consumption |
 
 ---
 
 ## SSE Endpoints
 
-SSE streams exposed by [[services/alphaGen/alphaGen|alphaGen]] (`GET` endpoints that hold the connection open):
+SSE streams exposed by [[alphaGen|alphaGen]] (`GET` endpoints that hold the connection open):
 
 | Endpoint | Source channel | Emits to | Events |
 |---|---|---|---|
-| `GET /runs/{id}/log` | Redis `run:{id}:log` | [[services/alphaLink/alphaLink\|alphaLink]] BFF → browser | `log`, `status`, `done` |
-| `GET /runs/events` | Redis `model.ready` | [[services/alphaTrade/alphaTrade\|alphaTrade]] on startup | `model.ready` |
+| `GET /runs/{id}/log` | Redis `run:{id}:log` | [[alphaLink\|alphaLink]] BFF → browser | `log`, `status`, `done` |
+| `GET /runs/events` | Redis `model.ready` | [[alphaTrade\|alphaTrade]] on startup | `model.ready` |
 
 ### SSE Event Formats
 
@@ -84,14 +84,14 @@ Contract tests: `tests/contract/test_model_ready_schema.py`
 | `db 0` | Celery broker — task routing |
 | `db 1` | Celery result backend — task state + results |
 
-Producer: [[services/alphaGen/alphaGen|alphaGen]] FastAPI (`POST /runs` enqueues `att.train_and_export`)  
-Consumer: [[services/alphaGen/alphaGen|alphaGen]] Celery worker
+Producer: [[alphaGen|alphaGen]] FastAPI (`POST /runs` enqueues `att.train_and_export`)  
+Consumer: [[alphaGen|alphaGen]] Celery worker
 
 ---
 
 ## Webhook Alerts
 
-[[services/alphaTrade/alphaTrade|alphaTrade]] notify module fires outbound HTTP webhooks on trading events. See [[services/alphaTrade/Config]] for `WEBHOOK_URL` env var.
+[[alphaTrade|alphaTrade]] notify module fires outbound HTTP webhooks on trading events. See [[alphaDocs/services/alphaTrade/Config]] for `WEBHOOK_URL` env var.
 
 | Event | Trigger |
 |---|---|

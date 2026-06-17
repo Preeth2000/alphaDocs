@@ -8,7 +8,7 @@ tags:
 
 # alphaFrame — API
 
-[[services/alphaFrame/alphaFrame|alphaFrame]] · [[services/alphaFrame/Architecture|Architecture]] · [[services/alphaFrame/Interactions|Interactions]] · [[services/alphaFrame/Data|Data]] · [[services/alphaFrame/Config|Config]]
+[[alphaFrame|alphaFrame]] · [[alphaDocs/services/alphaFrame/Architecture|Architecture]] · [[alphaDocs/services/alphaFrame/Interactions|Interactions]] · [[alphaDocs/services/alphaFrame/Data|Data]] · [[alphaDocs/services/alphaFrame/Config|Config]]
 
 ---
 
@@ -23,12 +23,12 @@ See [[reference/Ports-and-Endpoints]] for the complete port map. Key ports:
 
 | Port | Service | Access | Consumer |
 |---|---|---|---|
-| `443` | Nginx HTTPS | External | Browsers, [[services/alphaLink/alphaLink\|alphaLink]], CI |
+| `443` | Nginx HTTPS | External | Browsers, [[alphaLink\|alphaLink]], CI |
 | `80` | Nginx HTTP | External | → redirects to 443 |
-| `5000` | MLflow | Internal | [[services/alphaGen/alphaGen\|alphaGen]], [[services/alphaTrade/alphaTrade\|alphaTrade]] |
+| `5000` | MLflow | Internal | [[alphaGen\|alphaGen]], [[alphaTrade\|alphaTrade]] |
 | `5432` | PostgreSQL | Internal | All app services |
 | `6379` | Redis | Internal | All app services |
-| `9000` | MinIO S3 API | Internal | [[services/alphaGen/alphaGen\|alphaGen]], [[services/alphaTrade/alphaTrade\|alphaTrade]] |
+| `9000` | MinIO S3 API | Internal | [[alphaGen\|alphaGen]], [[alphaTrade\|alphaTrade]] |
 | `9001` | MinIO Console | Internal | Operators |
 | `3001` | Grafana | Internal | Operators |
 | `9090` | Prometheus | Internal | OTel Collector (remote write), operators |

@@ -8,9 +8,12 @@ tags:
 
 # Compliance Notes
 
-[[README]] · [[platform/Key-Decisions]] · [[platform/Tech-Stack]]
+[[README]] · [[ToDo]] · [[platform/Key-Decisions]] · [[platform/Tech-Stack]]
 
-Open compliance items requiring human review before commercial launch.
+Open compliance items requiring human review before commercial launch. Lives in [[ToDo]] since
+none of these are done — once an item is actioned, document the resolution in the proper place
+(legal sign-off note, [[alphaDocs/services/alphaTrade/Config]] for the production secrets item, etc.) and
+delete it from here.
 
 ---
 

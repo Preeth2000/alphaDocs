@@ -8,7 +8,7 @@ tags:
 
 # alphaGen — Config
 
-[[services/alphaGen/alphaGen|alphaGen]] · [[services/alphaGen/Architecture|Architecture]] · [[services/alphaGen/Interactions|Interactions]] · [[services/alphaGen/API|API]] · [[services/alphaGen/Data|Data]]
+[[alphaGen|alphaGen]] · [[alphaDocs/services/alphaGen/Architecture|Architecture]] · [[alphaDocs/services/alphaGen/Interactions|Interactions]] · [[alphaDocs/services/alphaGen/API|API]] · [[alphaDocs/services/alphaGen/Data|Data]]
 
 ---
 
@@ -19,6 +19,7 @@ Source: `alphaGen/.env.example`
 | Variable | Default | Required | Purpose |
 |---|---|---|---|
 | `DATABASE_URL` | — | ✅ | Postgres connection for `runs` + `validation_settings`. **Required in production** — unset outside `ATT_ENV=test/dev` raises `RuntimeError` at startup |
+| `PACT_VERIFICATION_MODE` | `false` | ⬜ | **Test-only.** When `true`, mounts the gated `POST /internal/pact-state` endpoint used by Pact provider verification (seeds/clears DB state). **Never set in production** — the endpoint can insert arbitrary DB rows. Set to `true` only in the `pact-verify` CI job. |
 | `ATT_ENV` | — | ⬜ | Set to `test` or `dev` to allow in-memory SQLite fallback (local dev only). Unset in production |
 | `REDIS_URL` | `redis://:password@redis:6379/0` | ✅ | Pub/sub + Celery broker (password required — see `REDIS_PASSWORD` in alphaFrame) |
 | `CELERY_BROKER_URL` | `redis://:password@redis:6379/0` | ✅ | Celery task broker |
@@ -173,4 +174,4 @@ Gate failure decisions:
 alphaGen has no runtime config overrides. Config is immutable per-run (stored in `run.config_yaml`). Validation gate thresholds are the only mutable config — via DB (PATCH /config/validation).
 
 > [!note] Compare to alphaTrade
-> [[services/alphaTrade/alphaTrade|alphaTrade]] has a full YAML → DB override priority chain. alphaGen does not — each run captures its full config at submission time.
+> [[alphaTrade|alphaTrade]] has a full YAML → DB override priority chain. alphaGen does not — each run captures its full config at submission time.

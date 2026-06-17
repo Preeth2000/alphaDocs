@@ -22,7 +22,7 @@ tags:
 
 Based on platform context, alphaPerf is expected to cover:
 
-- **API load testing**: Stress [[services/alphaGen/API|alphaGen]] and [[services/alphaTrade/API|alphaTrade]] endpoints under concurrent load (k6, Locust, or similar).
+- **API load testing**: Stress [[alphaDocs/services/alphaGen/API|alphaGen]] and [[alphaDocs/services/alphaTrade/API|alphaTrade]] endpoints under concurrent load (k6, Locust, or similar).
 - **Inference latency benchmarking**: Measure ONNX model inference time per tick across different model architectures (MLP vs LSTM vs Transformer) and window sizes.
 - **Scheduler tick overhead**: Profile end-to-end latency from bar close to order submission under different model counts.
 - **Database throughput**: Benchmark Postgres write throughput under peak trading activity (signals, orders, positions, P&L updates simultaneously).
@@ -34,16 +34,16 @@ Based on platform context, alphaPerf is expected to cover:
 
 | Service | Purpose |
 |---|---|
-| [[services/alphaGen/alphaGen\|alphaGen]] | Benchmark training job submission + log streaming |
-| [[services/alphaTrade/alphaTrade\|alphaTrade]] | Benchmark inference tick latency + API throughput |
-| [[services/alphaFrame/alphaFrame\|alphaFrame]] | Prometheus metrics for baseline comparison |
+| [[alphaGen\|alphaGen]] | Benchmark training job submission + log streaming |
+| [[alphaTrade\|alphaTrade]] | Benchmark inference tick latency + API throughput |
+| [[alphaFrame\|alphaFrame]] | Prometheus metrics for baseline comparison |
 
 ---
 
 
 ## Test Catalogue
 
-> Performance budgets + scenario matrix (2026-06-13 review): [[services/alphaPerf/Performance-Test-Plan|Performance Test Plan]]
+> Performance budgets + scenario matrix (2026-06-13 review): [[Performance-Test-Plan|Performance Test Plan]]
 
 ---
 

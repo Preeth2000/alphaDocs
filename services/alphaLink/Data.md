@@ -8,7 +8,7 @@ tags:
 
 # alphaLink — Data
 
-[[services/alphaLink/alphaLink|alphaLink]] · [[services/alphaLink/Architecture|Architecture]] · [[services/alphaLink/Interactions|Interactions]] · [[services/alphaLink/API|API]] · [[services/alphaLink/Config|Config]]
+[[alphaLink|alphaLink]] · [[alphaDocs/services/alphaLink/Architecture|Architecture]] · [[alphaDocs/services/alphaLink/Interactions|Interactions]] · [[alphaDocs/services/alphaLink/API|API]] · [[alphaDocs/services/alphaLink/Config|Config]]
 
 ---
 
@@ -64,4 +64,4 @@ Server data cached per-query key. Invalidated on mutations.
 | `GET /api/trade/[...]/positions` | 1 | 0 |
 | `GET /api/trade/events` (SSE) | 0 | 0 |
 
-All data ultimately lives in [[services/alphaGen/Data|alphaGen Data]], [[services/alphaTrade/Data|alphaTrade Data]], or [[services/alphaKey/Data|alphaKey Data]].
+All data ultimately lives in [[alphaDocs/services/alphaGen/Data|alphaGen Data]], [[alphaDocs/services/alphaTrade/Data|alphaTrade Data]], or [[alphaDocs/services/alphaKey/Data|alphaKey Data]].
